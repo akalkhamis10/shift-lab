@@ -671,8 +671,6 @@ body.pg .tv-crumb{ display:none; }
   background:var(--paper); color:var(--ink); border:2px solid var(--paper);
   border-radius:var(--r-chip); padding:6px 12px; cursor:pointer; }
 
-.pm-seed{ font-family:var(--font-text); font-size:13px; font-weight:700; color:var(--paper);
-  opacity:.55; text-align:center; padding:2px 0; direction:ltr; unicode-bidi:plaintext; }
 .pm-item.pm-x{ background:none; color:var(--paper); border-color:rgba(251,246,236,.45);
   font-weight:700; font-size:15px; min-height:44px; }
 
@@ -1505,7 +1503,24 @@ function boot(){
   $('#homeBtn').onclick = () => { teardown(); S.screen='home'; render(); };
   document.querySelectorAll('#nav [data-go]').forEach(b => b.onclick = () => { teardown(); S.screen = b.dataset.go; render(); });
    
-  (SHIFT.local ? SHIFT.local.ready : Promise.resolve()).then(render, render);
+  (SHIFT.local ? SHIFT.local.ready : Promise.resolve()).then(render, render).then(tryOpen, tryOpen);
+}
+
+function tryOpen(){
+  let v = null;
+  try { v = JSON.parse(sessionStorage.getItem('shift.try.v1') || 'null');
+        sessionStorage.removeItem('shift.try.v1'); }
+  catch(e){ console.warn('SHIFT: تعذّرت قراءة علامة التجربة —', e && e.message); return; }
+  if(!v || !v.lesson) return;
+  try {
+    launch(null, v.lesson, null);
+    if(!v.game) return;
+    const b = document.querySelector('[data-game="' + v.game + '"]');
+    if(!b){ console.warn('SHIFT: لا لعبة بهذا الاسم في الدرس —', v.game); return; }
+    b.click();
+    const go = [...document.querySelectorAll('button')].find(x => /ابدأ اللعبة/.test(x.textContent));
+    if(go) go.click();
+  } catch(e){ console.warn('SHIFT: تعذّر فتح التجربة —', e && e.message); }
 }
 
 SHIFT.local = (function(){
