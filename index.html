@@ -205,6 +205,20 @@
   border:2px solid var(--sea-ink); border-radius:999px;
   padding:3px 9px; margin-inline-end:7px; vertical-align:middle; }
 
+@media (max-height:460px) and (min-width:660px){
+  
+  .sea-body[data-v="home"]{ display:grid; grid-template-columns:1fr 1fr; align-items:start;
+    column-gap:16px; row-gap:8px; max-width:none; }
+  .sea-body[data-v="home"] > .sea-sec{ min-width:0; }
+  .sea-body[data-v="home"] > .sea-figure{ display:none; }
+  .sea-body[data-v="home"] > .sea-foot{ grid-column:1 / -1; margin-block-start:0; }
+  
+  .sea-body[data-v="home"] > .sea-sec:first-child .sea-cards{ max-height:16em; overflow-y:auto; }
+}
+
+.sea-dot{ display:inline-block; width:4px; height:4px; border-radius:50%;
+  background:var(--sea-sub); margin-inline:8px; vertical-align:middle; }
+
 </style>
 </head>
 <body>
@@ -2445,6 +2459,2047 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
 <script>
 (function () {
   const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+
+  const CW = 44, CH = 40, GAP = 6, PAD = 5, ROWS = 4;
+  const SIDES = 3;         
+  const SIDES_LAST = 2;    
+  const BEHIND = 2;        
+
+  const CSS_ID = 'css-freej';
+  function css() {
+    if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return;
+    const s = document.createElement('style');
+    s.id = CSS_ID;
+    s.textContent = [
+       
+      '.fr{ width:100%; height:100%; min-height:0; display:grid; gap:.3em;',
+      '  grid-template-columns: minmax(0,1fr);',
+       
+      '  grid-template-rows: auto auto minmax(207px,1fr) minmax(0,auto) auto;',
+      '  grid-template-areas: "tag" "q" "board" "ans" "sub";',
+      '  justify-items:center; overflow:hidden; }',
+      '.fr-tag{ grid-area:tag; display:flex; flex-wrap:wrap; justify-content:center; gap:.3em }',
+       
+      '.fr>.gw-q{ grid-area:q; font-size:clamp(19px,1.95em,46px) }',
+      '.fr>.gw-board{ grid-area:board }',
+      '.fr-ans{ grid-area:ans }',
+      '.fr>.gw-sub{ grid-area:sub; line-height:1.3 }',
+       
+      '@media (max-height:520px) and (orientation:landscape){',
+      '  .fr{ grid-template-columns: minmax(0,58%) minmax(0,1fr);',
+      '    grid-template-rows: auto auto minmax(0,1fr) auto;',
+      '    grid-template-areas: "tag board" "q board" "ans board" "sub board"; }',
+      '  .fr>.gw-q{ font-size: clamp(16px,1.15em,34px) }',
+      '}',
+       
+      '.fr-map{ touch-action:none }',
+      '.fr-hit{ pointer-events:all }',
+      '.fr-h[data-free="1"]{ cursor:pointer }',
+      '.fr-ring{ opacity:0 }',
+       
+      '.fr-map[data-live="1"] .fr-h[data-free="1"] .fr-ring{ opacity:1 }',
+      '.fr-h[data-hot="1"] .fr-ring{ opacity:1; stroke-width:4.5 }',
+      '@keyframes frPop{ from{ transform:scale(.72) } to{ transform:none } }',
+      '.fr-h[data-new="1"]{ transform-box:fill-box; transform-origin:center; animation:frPop .26s ease-out }',
+       
+      '.fr-ans{ width:100%; display:flex; flex-wrap:wrap; gap:.35em;',
+      '  align-items:stretch; justify-content:center;',
+      '  min-height:0; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain }',
+      '.fr-c{ font:inherit; font-size:clamp(15px,1.15em,34px); font-weight:700; line-height:1.25;',
+      '  flex:1 1 11em; min-width:0; min-height:44px; max-width:100%;',
+      '  padding:.25em .8em; cursor:pointer; touch-action:none;',
+      '  overflow-wrap:anywhere; background:var(--sea-white); color:var(--sea-ink);',
+      '  border:var(--sea-bd) solid var(--sea-ink); border-radius:var(--sea-r);',
+      '  box-shadow:0 4px 0 var(--sea-ink) }',
+      '.fr-c[data-on="1"]{ background:var(--sea-sun) }',
+      '.fr-c[data-st="ok"]{ background:var(--sea-t3); color:var(--sea-white) }',
+      '.fr-c[data-st="no"]{ background:var(--sea-coral); color:var(--sea-white) }',
+      '.fr-c[disabled]{ cursor:default }',
+       
+      '.fr-ghost{ position:fixed; left:0; top:0; z-index:60; pointer-events:none;',
+      '  box-sizing:border-box; font-family:var(--sea-text); font-weight:700;',
+      '  font-size:clamp(15px,2.4vw,30px); line-height:1.25; padding:.3em .8em;',
+      '  max-width:60vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;',
+      '  background:var(--sea-sun); color:var(--sea-ink);',
+      '  border:var(--sea-bd) solid var(--sea-ink); border-radius:var(--sea-r);',
+      '  box-shadow:var(--sea-shadow) }',
+       
+      '@media (max-height:520px) and (orientation:landscape){ .fr-c{ font-size:clamp(13px,.85em,22px) } }',
+      '@media (prefers-reduced-motion:reduce){ .fr-h[data-new="1"]{ animation:none } }',
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+
+  S.games.define({
+    kind: 'تخطيط',
+     
+    keys: { verb: 'سحب وفرز', relation: 'فرق ضد فرق', second: 'أرض', form: 'أزواج' },
+    id: 'freej',
+    name: 'الفريج',
+    line: 'اسحب الإجابة إلى بيت على الخريطة، والبيت المحاصر ينتقل إلى من حاصره.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'الأخير يحاصر بجهتين لا بثلاث',
+
+    art() {
+       
+      const h = (x, y, f) =>
+        '<g transform="translate(' + x + ',' + y + ')">' +
+          '<rect x="3" y="10" width="20" height="13" rx="2" fill="' + f +
+            '" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+          '<path d="M0 11 L13 2 L26 11 Z" fill="var(--sea-ink)"/>' +
+        '</g>';
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="8" width="108" height="64" rx="10" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        h(14, 16, 'var(--sea-t1)') + h(47, 16, 'var(--sea-white)') + h(80, 16, 'var(--sea-t3)') +
+        h(14, 45, 'var(--sea-white)') + h(47, 45, 'var(--sea-t1)') + h(80, 45, 'var(--sea-t1)') +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      css();
+
+      const T = api.teams;
+      const AR = api.AR;
+
+      const pairs = S.forms.pairs(api.qs, api.rnd() * 1e9 | 0);
+       
+      const COLS = pairs.length >= 12 ? 5 : 4;
+      const HOUSES = COLS * ROWS;
+      const VW = COLS * CW + (COLS - 1) * GAP + PAD * 2;
+      const VH = ROWS * CH + (ROWS - 1) * GAP + PAD * 2;
+
+      const ROUNDS = Math.min(pairs.length, HOUSES);
+
+      const deck = [];
+      for (let n = 0; n < ROUNDS; n++) {
+        const right = pairs[n].a;
+        const pool = [];
+        for (let m = 1; m < pairs.length && pool.length < 8; m++) {
+          const t = pairs[(n + m) % pairs.length].a;
+          if (t !== right && pool.indexOf(t) < 0) pool.push(t);
+        }
+        const chips = [right];
+        while (chips.length < 3 && pool.length) {
+          chips.push(pool.splice(Math.floor(api.rnd() * pool.length), 1)[0]);
+        }
+         
+        for (let k = chips.length - 1; k > 0; k--) {
+          const j = Math.floor(api.rnd() * (k + 1));
+          const t = chips[k]; chips[k] = chips[j]; chips[j] = t;
+        }
+        deck.push({ q: pairs[n].q, right: right, chips: chips });
+      }
+
+      const owner = [];                     
+      let fresh = [];                       
+      let i = 0, sel = -1, hot = -1, note = '';
+      let locked = false, gone = false;
+      let dragK = -1, moved = false, sx = 0, sy = 0, ghost = null;
+      const timers = [];
+      const wait = (ms, fn) => { timers.push(setTimeout(() => { if (!gone) fn(); }, ms)); };
+
+      function nbrs(n) {
+        const c = n % COLS, r = (n / COLS) | 0, out = [];
+        if (c > 0) out.push(n - 1);
+        if (c < COLS - 1) out.push(n + 1);
+        if (r > 0) out.push(n - COLS);
+        if (r < ROWS - 1) out.push(n + COLS);
+        return out;
+      }
+      function houses(k) { let n = 0; for (let x = 0; x < HOUSES; x++) if (owner[x] === k) n++; return n; }
+
+      function sides(k) {
+        const c = T.map((_, x) => houses(x));
+        const me = c[k], top = Math.max.apply(null, c), low = Math.min.apply(null, c);
+        return (me === low && (top - me) >= BEHIND) ? SIDES_LAST : SIDES;
+      }
+
+      function siege(k, need) {
+        const snap = owner.slice(), took = [];
+        for (let n = 0; n < HOUSES; n++) {
+          if (snap[n] == null || snap[n] === k) continue;
+          let c = 0;
+          nbrs(n).forEach(m => { if (snap[m] === k) c++; });
+          if (c >= need) took.push(n);
+        }
+        took.forEach(n => { owner[n] = k; });
+        return took;
+      }
+
+      function sync() {
+        T.forEach((t, k) => {
+          const d = houses(k) - (t.score || 0);
+          if (d) api.score(k, d);
+        });
+      }
+
+      function home(o) {
+        const fill = o == null ? 'var(--sea-white)' : T[o].color;
+        return '<rect class="fr-hit" width="' + CW + '" height="' + CH + '" fill="none"/>' +
+           
+          '<path d="M4 19 L22 5 L40 19 L40 37 L4 37 Z" transform="translate(2,2)" fill="var(--sea-ink)"/>' +
+          '<rect x="8" y="19" width="28" height="18" rx="2.5" fill="' + fill +
+            '" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+          '<path d="M3 20 L22 5 L41 20 Z" fill="var(--sea-ink)"/>' +
+          '<rect x="17" y="26" width="10" height="11" rx="2" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+          '<rect class="fr-ring" x="1" y="2" width="' + (CW - 2) + '" height="' + (CH - 4) +
+            '" rx="6" fill="none" stroke="var(--sea-sun)" stroke-width="3.2" stroke-dasharray="7 5"/>';
+      }
+
+      function map() {
+        let s = '<svg class="fr-map" viewBox="0 0 ' + VW + ' ' + VH +
+          '" preserveAspectRatio="xMidYMid meet" role="group" aria-label="خريطة الفريج">';
+        for (let n = 0; n < HOUSES; n++) {
+          const x = PAD + (n % COLS) * (CW + GAP);
+          const y = PAD + ((n / COLS) | 0) * (CH + GAP);
+          const o = owner[n];
+          s += '<g class="fr-h" data-n="' + n + '" data-free="' + (o == null ? '1' : '0') + '"' +
+            (fresh.indexOf(n) >= 0 ? ' data-new="1"' : '') +
+            ' role="button" tabindex="0" aria-label="بيت ' + AR(n + 1) +
+            (o == null ? ' خالٍ' : ' لفريق ' + api.esc(T[o].name)) + '"' +
+            ' transform="translate(' + x + ',' + y + ')">' + home(o) + '</g>';
+        }
+        return s + '</svg>';
+      }
+
+      function tagHtml() {
+        if (note) return '<p class="gw-tag">' + api.esc(note) + '</p>';
+         
+        if (sides(api.turn()) === SIDES_LAST) return '<p class="gw-tag">الفريق الأخير يحاصر بجهتين لا بثلاث</p>';
+        return '';
+      }
+
+      function render() {
+        const R = deck[i];
+        el.innerHTML =
+          '<div class="fr">' +
+            '<div class="fr-tag">' + tagHtml() + '</div>' +
+            '<h2 class="gw-q">' + api.esc(R.q) + '</h2>' +
+            '<div class="gw-board">' + map() + '</div>' +
+            '<div class="fr-ans">' + R.chips.map((t, k) =>
+              '<button class="fr-c" type="button" data-k="' + k + '">' + api.esc(t) + '</button>').join('') +
+            '</div>' +
+             
+            '<p class="gw-sub gw-mine">اسحب الإجابة إلى بيت خالٍ، أو المس الإجابة ثم المس البيت.</p>' +
+          '</div>';
+        bindChips();
+        bindHouses();
+      }
+
+      function redrawMap() {
+        const box = el.querySelector('.gw-board');
+        if (!box) return;
+        box.innerHTML = map();
+        bindHouses();
+      }
+      function redrawTag() {
+        const t = el.querySelector('.fr-tag');
+        if (t) t.innerHTML = tagHtml();
+      }
+
+      function live(on) {
+        const m = el.querySelector('.fr-map');
+        if (!m) return;
+        if (on) m.dataset.live = '1'; else m.removeAttribute('data-live');
+      }
+      function pick(k) {
+        if (locked || sel === k) return;
+        sel = k;
+        el.querySelectorAll('.fr-c').forEach(b => {
+          if (+b.dataset.k === k) b.dataset.on = '1'; else b.removeAttribute('data-on');
+        });
+        live(true);
+        api.sfx('pop');
+      }
+      function setHot(n) {
+        if (hot === n) return;
+        const m = el.querySelector('.fr-map');
+        if (!m) { hot = n; return; }
+        const prev = m.querySelector('.fr-h[data-hot="1"]');
+        if (prev) prev.removeAttribute('data-hot');
+        hot = -1;
+        if (n < 0) return;
+        const g = m.querySelector('.fr-h[data-n="' + n + '"]');
+        if (g && g.getAttribute('data-free') === '1') { g.dataset.hot = '1'; hot = n; }
+      }
+      function houseAt(x, y) {
+        if (typeof document.elementFromPoint !== 'function') return -1;
+        const t = document.elementFromPoint(x, y);
+        const g = t && t.closest ? t.closest('.fr-h') : null;
+        return g ? +g.getAttribute('data-n') : -1;
+      }
+      function ghostOn(text) {
+        ghostOff();
+        ghost = document.createElement('div');
+        ghost.className = 'fr-ghost';
+        ghost.textContent = text;
+        document.body.appendChild(ghost);
+      }
+      function ghostAt(x, y) {
+        if (ghost) ghost.style.transform =
+          'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px) translate(-50%,-150%)';
+      }
+      function ghostOff() {
+        if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+        ghost = null;
+      }
+
+      function onDown(e, k) {
+        if (locked) return;
+        pick(k);
+        dragK = k; moved = false; sx = e.clientX; sy = e.clientY;
+         
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+        e.preventDefault();
+      }
+      function onMove(e) {
+        if (dragK < 0) return;
+        if (!moved) {
+          if (Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) < 8) return;
+          moved = true;
+          ghostOn(deck[i].chips[dragK]);
+        }
+        ghostAt(e.clientX, e.clientY);
+        setHot(houseAt(e.clientX, e.clientY));
+      }
+      function onUp(e) {
+        if (dragK < 0) return;
+        const k = dragK;
+        dragK = -1;
+        if (!moved) return;       
+        moved = false;
+        ghostOff();
+        const h = houseAt(e.clientX, e.clientY);
+        setHot(-1);
+        if (h >= 0) drop(k, h);
+      }
+      function onCancel() {
+        dragK = -1; moved = false; ghostOff(); setHot(-1);
+      }
+
+      function tapHouse(n) {
+        if (locked) return;
+        if (sel < 0) { api.say('المس الإجابة أولاً', 'bad'); return; }
+        drop(sel, n);
+      }
+
+      function bindChips() {
+        el.querySelectorAll('.fr-c').forEach(b => {
+          const k = +b.dataset.k;
+          b.onpointerdown = e => onDown(e, k);
+          b.onclick = () => pick(k);
+          b.onkeydown = e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(k); }
+          };
+        });
+      }
+      function bindHouses() {
+        el.querySelectorAll('.fr-h').forEach(g => {
+          const n = +g.getAttribute('data-n');
+          g.onclick = () => tapHouse(n);
+          g.onkeydown = e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapHouse(n); }
+          };
+        });
+      }
+
+      function drop(k, h) {
+        if (locked) return;
+         
+        if (owner[h] != null) { api.say('اختر بيتاً خالياً', 'bad'); api.sfx('soft'); return; }
+        locked = true;
+        live(false);
+        setHot(-1);
+
+        const R = deck[i], t = api.turn(), ok = (R.chips[k] === R.right);
+         
+        const need = sides(t);
+        el.querySelectorAll('.fr-c').forEach(b => {
+          const n = +b.dataset.k;
+          b.disabled = true;
+          b.removeAttribute('data-on');
+          if (R.chips[n] === R.right) b.dataset.st = 'ok';
+          else if (n === k) b.dataset.st = 'no';
+        });
+
+        let took = [];
+        fresh = [];
+        if (ok) {
+          owner[h] = t;
+          fresh = [h];
+          took = siege(t, need);
+          fresh = fresh.concat(took);
+          sync();
+        }
+        redrawMap();
+
+        api.judge(ok, {
+          text: ok
+            ? (took.length ? 'حصار — ' + (took.length > 1 ? AR(took.length) + ' بيوت تنتقل' : 'بيت ينتقل')
+                           : 'بيت لفريق ' + T[t].name)
+            : 'الصحيح: ' + R.right,
+        });
+        if (took.length) {
+          note = 'حاصر فريق ' + T[t].name + ' فأخذ ' +
+            (took.length > 1 ? AR(took.length) + ' بيوت' : 'بيتاً');
+          redrawTag();
+          api.sfx('turn');
+        }
+        wait(1900, next);
+      }
+
+      function next() {
+        i++;
+        api.nextTurn();
+        if (i >= ROUNDS) { api.step(ROUNDS, ROUNDS); return api.finish(); }
+        draw();
+      }
+
+      function draw() {
+        if (!deck[i]) return api.finish();
+        api.step(i, ROUNDS);
+         
+        locked = false; sel = -1; hot = -1; note = ''; fresh = [];
+        render();
+      }
+
+      function cleanup() {
+        gone = true; locked = true;
+        timers.forEach(clearTimeout); timers.length = 0;
+        ghostOff();
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onCancel);
+      }
+
+      window.addEventListener('pointermove', onMove, { passive: true });
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onCancel);
+      api.onDestroy(cleanup);
+
+      if (ROUNDS) draw(); else api.finish();
+      return { destroy: cleanup };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+
+  const GATES = 3;         
+  const BUILD = 3;         
+  const LIFE = 10;         
+  const THIRD = 3;         
+  const WAVE_MS = 9000;    
+   
+  const WY0 = -20, WY1 = 122;
+   
+  const WAVE_D = 'M0 32 V22 q13 -15 26 0 t26 0 t26 0 V32 Z';
+
+  if (!document.getElementById('css-wall2')) {
+    const st = document.createElement('style');
+    st.id = 'css-wall2';
+    st.textContent =
+      '.wl{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:.4em}' +
+       
+      '.wl-board{flex:0 1 auto;width:min(34em,100%);aspect-ratio:300/230;' +
+      'min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}' +
+      '.wl-board svg{width:100%;height:100%;max-height:100%;display:block}' +
+      '.wl-side{--wl-fit:1;flex:0 0 auto;width:min(30em,100%);min-width:0;display:flex;' +
+      'flex-direction:column;align-items:center;gap:.35em}' +
+      '.wl-top{display:flex;align-items:center;justify-content:center;gap:.45em;flex-wrap:wrap}' +
+       
+      '.wl-t{font-family:var(--sea-display);font-weight:800;font-size:calc(1.3em*var(--wl-fit,1));line-height:1;' +
+      'min-width:1.9em;padding:.25em .3em;border:2px solid var(--sea-ink);border-radius:999px;' +
+      'background:var(--sea-white);color:var(--sea-ink);text-align:center}' +
+      '.wl-t[data-near="1"]{background:var(--sea-coral);color:var(--sea-white)}' +
+      '.wl-card{width:100%;display:flex;flex-direction:column;gap:.25em;align-items:center;' +
+      'padding:.45em .7em;border:var(--sea-bd) solid var(--sea-ink);border-radius:var(--sea-r);' +
+      'background:var(--sea-white);box-shadow:0 5px 0 var(--sea-ink)}' +
+      '.wl-q{margin:0;font-family:var(--sea-display);font-weight:800;text-align:center;' +
+      'font-size:calc(clamp(17px,1.3em,38px)*var(--wl-fit,1));line-height:1.3;overflow-wrap:anywhere}' +
+      '.wl-a{margin:0;font-family:var(--sea-display);font-weight:800;text-align:center;' +
+      'font-size:calc(clamp(18px,1.55em,46px)*var(--wl-fit,1));line-height:1.25;color:var(--sea-coral);' +
+      'overflow-wrap:anywhere}' +
+      '.wl-acts{display:flex;gap:.5em;width:100%}' +
+      '.wl-acts .gw-opt{justify-content:center;text-align:center;' +
+      'font-size:calc(1.15em*var(--wl-fit,1))}' +
+       
+      '.wl .gw-head{font-size:calc(clamp(16px,1.2em,36px)*var(--wl-fit,1))}' +
+      '.wl .gw-tag{font-size:calc(.8em*var(--wl-fit,1))}' +
+       
+      '@media (min-width:640px){' +
+      '.wl{flex-direction:row;align-items:center;gap:.6em}' +
+      '.wl-board{flex:1 1 46%;width:auto;aspect-ratio:auto;align-self:stretch}' +
+      '.wl-side{flex:1 1 54%;width:auto;max-width:30em}}' +
+       
+      '@media (max-width:639px) and (max-height:560px){' +
+      '.wl-board{flex:1 1 0;aspect-ratio:auto;min-height:2.6em}}' +
+       
+      '@media (max-height:560px){' +
+      '.wl-q{font-size:calc(clamp(15px,1.15em,32px)*var(--wl-fit,1))}' +
+      '.wl-a{font-size:calc(clamp(16px,1.35em,38px)*var(--wl-fit,1))}' +
+      '.wl-card{gap:.15em;padding:.35em .6em}' +
+      '.wl-side{gap:.25em}.wl-top{gap:.3em}' +
+      '.wl .gw-head{font-size:calc(clamp(13px,.92em,24px)*var(--wl-fit,1))}' +
+       
+      '.wl .gw-tag{font-size:calc(.66em*var(--wl-fit,1));padding:.28em .7em}' +
+      '.wl-t{font-size:calc(1em*var(--wl-fit,1));min-width:1.7em;padding:.2em .3em}' +
+      '.wl-board{flex:1 1 34%}.wl-side{flex:1 1 66%}}';
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    kind: 'تعاون',
+     
+    keys: { verb: 'توقيت ضغطة', relation: 'الفصل ضد الوقت', second: 'بناء', form: 'بطاقة حكم' },
+    id: 'wall2',
+    name: 'السور',
+    line: 'موجة تتقدّم نحو بوابة — والحكم الصحيح قبل وصولها يضع حارساً.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 8,
+    comeback: 'عند ثلث الصحّة تضع كل بطاقة حارسين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="4" y="8" width="112" height="64" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<path d="M12 30 q8 -11 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 V40 H12 Z" fill="var(--sea-t1)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>' +
+        '<rect x="12" y="46" width="96" height="6" rx="3" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="12" y="52" width="96" height="16" rx="4" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="18" y="56" width="24" height="12" rx="5" fill="var(--sea-t3)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="48" y="56" width="24" height="12" rx="5" fill="var(--sea-ink)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="78" y="56" width="24" height="12" rx="5" fill="var(--sea-ink)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<circle cx="60" cy="61" r="4" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+       
+      const cards = S.forms.judge(api.qs, api.rnd() * 1e9 | 0);
+      const guards = [];
+      for (let k = 0; k < GATES; k++) guards.push(0);
+
+      let health = LIFE, i = 0, target = 0;
+      let locked = false, gone = false, boost = false;
+      let t0 = 0, tick = 0, lastSec = -1, waveX = '0';
+      let waveEl = null, badgeEl = null;
+
+      const timers = [];
+      const wait = (ms, fn) => { const t = setTimeout(() => { if (!gone) fn(); }, ms); timers.push(t); return t; };
+       
+      const stop = () => { if (tick) { clearInterval(tick); tick = 0; } };
+
+      let fitRaf = 0;
+      function fit() {
+        const side = el.querySelector('.wl-side');
+        if (!side || !el.clientHeight) return;
+        side.style.setProperty('--wl-fit', '1');
+         
+        for (let k = 1; k > 0.56 && el.scrollHeight > el.clientHeight + 1;) {
+          k -= 0.06;
+          side.style.setProperty('--wl-fit', k.toFixed(2));
+        }
+      }
+       
+      const refit = () => { if (gone) return; cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fit); };
+      addEventListener('resize', refit);
+       
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit, () => {});
+
+      const builtCount = () => guards.filter(g => g >= BUILD).length;
+      const held = () => guards.reduce((a, b) => a + Math.min(b, BUILD), 0);
+
+      const gateX = k => 25 + (GATES - 1 - k) * 88;
+
+      function guardShape(cx) {
+        return '<circle cx="' + cx.toFixed(1) + '" cy="182" r="5" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+          '<rect x="' + (cx - 5.5).toFixed(1) + '" y="187" width="11" height="15" rx="4" ' +
+          'fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2"/>';
+      }
+
+      function board(p) {
+        let s = '<svg viewBox="0 0 300 230" aria-hidden="true" preserveAspectRatio="xMidYMid meet">';
+         
+        s += '<rect x="6" y="154" width="288" height="9" rx="4" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2.5"/>';
+        s += '<rect x="13" y="165" width="280" height="40" rx="6" fill="var(--sea-ink)"/>';
+        s += '<rect x="10" y="162" width="280" height="40" rx="6" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>';
+
+        for (let k = 0; k < GATES; k++) {
+          const x = gateX(k);
+          const done = guards[k] >= BUILD;
+           
+          const hot = (k === target && !done && p !== null);
+          s += '<rect x="' + (x + 3) + '" y="171" width="74" height="34" rx="10" fill="var(--sea-ink)"/>';
+           
+          s += '<rect x="' + x + '" y="168" width="74" height="34" rx="10" fill="' +
+            (done ? 'var(--sea-t3)' : 'var(--sea-ink)') + '" stroke="' +
+            (hot ? 'var(--sea-coral)' : 'var(--sea-ink)') + '" stroke-width="3"/>';
+          const n = Math.min(guards[k], BUILD);
+          for (let g = 0; g < n; g++) s += guardShape(x + 18.5 + g * 18.5);
+          if (done) {
+             
+            s += '<rect x="' + (x + 35.5) + '" y="146" width="3" height="22" fill="var(--sea-ink)"/>';
+            s += '<path d="M' + (x + 38) + ' 146 L' + (x + 59) + ' 152 L' + (x + 38) + ' 158 Z" ' +
+              'fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>';
+          }
+        }
+
+        for (let j = 0; j < LIFE; j++) {
+          const x = 290 - 25 - j * 28.333;
+          if (j < health) {
+            s += '<rect x="' + x.toFixed(1) + '" y="208" width="25" height="12" rx="3" ' +
+              'fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2"/>';
+          } else {
+            s += '<rect x="' + x.toFixed(1) + '" y="208" width="25" height="12" rx="3" fill="none" ' +
+              'stroke="var(--sea-sub)" stroke-width="2" stroke-dasharray="4 3"/>';
+          }
+        }
+
+        if (p !== null) {
+          const ty = (WY0 + p * (WY1 - WY0)).toFixed(1);
+          s += '<g id="wlWave" transform="translate(' + waveX + ',' + ty + ')">' +
+            '<path d="' + WAVE_D + '" fill="var(--sea-ink)" transform="translate(3,3)"/>' +
+            '<path d="' + WAVE_D + '" fill="var(--sea-t1)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>' +
+            '</g>';
+        }
+        return s + '</svg>';
+      }
+
+      const headText = () => 'صحّة السور ' + api.AR(health) + ' من ' + api.AR(LIFE) +
+        ' — الحرّاس ' + api.AR(held()) + ' من ' + api.AR(GATES * BUILD);
+
+      function draw() {
+        const c = cards[i];
+        if (!c) return over('نجا السور — الصحّة ' + api.AR(health) + ' من ' + api.AR(LIFE));
+        api.step(i, cards.length);
+        locked = false;
+        boost = health <= THIRD;
+         
+        const open = [];
+        for (let k = 0; k < GATES; k++) if (guards[k] < BUILD) open.push(k);
+        target = open[Math.floor(api.rnd() * open.length) % open.length];
+         
+        waveX = (gateX(target) - 2).toFixed(1);
+
+        el.innerHTML =
+          '<div class="wl">' +
+            '<div class="wl-board" id="wlBoard">' + board(0) + '</div>' +
+            '<div class="wl-side">' +
+              (boost ? '<p class="gw-tag">صحّة السور في الثلث — كل بطاقة تضع حارسين</p>' : '') +
+              '<div class="wl-top">' +
+                '<p class="gw-head">' + api.esc(headText()) + '</p>' +
+                '<span class="wl-t" id="wlT">' + api.AR(Math.ceil(WAVE_MS / 1000)) + '</span>' +
+              '</div>' +
+              '<div class="wl-card">' +
+                '<p class="wl-q">' + api.esc(c.q) + '</p>' +
+                '<p class="wl-a">' + api.esc(c.shown) + '</p>' +
+              '</div>' +
+              '<div class="wl-acts">' +
+                '<button class="gw-opt" type="button" data-v="1">صح</button>' +
+                '<button class="gw-opt" type="button" data-v="0">خطأ</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        el.querySelectorAll('[data-v]').forEach(b => { b.onclick = () => resolve(b.dataset.v === '1'); });
+        waveEl = el.querySelector('#wlWave');
+        badgeEl = el.querySelector('#wlT');
+        fit();
+        run();
+      }
+
+      function run() {
+        stop();
+        t0 = Date.now();
+        lastSec = -1;
+        tick = setInterval(() => {
+          if (gone || locked) return;
+          const ms = Date.now() - t0;
+          const p = Math.min(1, ms / WAVE_MS);
+          if (waveEl) waveEl.setAttribute('transform', 'translate(' + waveX + ',' + (WY0 + p * (WY1 - WY0)).toFixed(1) + ')');
+          const sec = Math.max(0, Math.ceil((WAVE_MS - ms) / 1000));
+          if (sec !== lastSec && badgeEl) {
+            lastSec = sec;
+            badgeEl.textContent = api.AR(sec);
+            if (sec <= 3) badgeEl.dataset.near = '1'; else badgeEl.removeAttribute('data-near');
+          }
+          if (p >= 1) resolve(null);
+        }, 50);
+      }
+
+      function resolve(said) {
+        if (locked) return;
+        locked = true;
+        stop();
+        const c = cards[i];
+        const late = (said === null);
+        const ok = !late && (said === c.ok);
+
+        el.querySelectorAll('[data-v]').forEach(b => {
+          b.disabled = true;
+          const v = b.dataset.v === '1';
+          if (v === c.ok) b.dataset.st = 'ok';
+          else if (!late && v === said) b.dataset.st = 'no';
+        });
+
+        let text;
+        if (ok) {
+          const add = boost ? 2 : 1;
+          const before = guards[target];
+          guards[target] = Math.min(BUILD, before + add);
+          const laid = guards[target] - before;
+          api.score(api.turn(), 1);
+          api.sfx('pop');
+           
+          text = guards[target] >= BUILD ? 'اكتملت البوابة'
+            : (laid > 1 ? 'حارسان على البوابة' : 'حارس على البوابة');
+        } else if (guards[target] > 0) {
+           
+          guards[target]--;
+          text = 'صدّ الحارس الموجة — الصحيح: ' + c.right;
+        } else {
+          health = Math.max(0, health - 1);
+          text = (late ? 'بلغت الموجة البوابة' : 'دخلت الموجة') + ' — الصحيح: ' + c.right;
+        }
+
+        const bd = el.querySelector('#wlBoard');
+         
+        if (bd) bd.innerHTML = board(ok ? null : 1);
+        waveEl = null;
+        const hd = el.querySelector('.gw-head');
+        if (hd) hd.textContent = headText();
+
+        api.judge(ok, { text: text });
+        wait(1800, next);
+      }
+
+      function next() {
+        if (health <= 0) return over('سقط السور — البوابات المبنيّة ' + api.AR(builtCount()) + ' من ' + api.AR(GATES));
+         
+        if (builtCount() >= GATES) return over('اكتمل السور — كل بوابة مبنيّة');
+        i++;
+        api.nextTurn();
+        if (i >= cards.length) return over('نجا السور — الصحّة ' + api.AR(health) + ' من ' + api.AR(LIFE));
+        draw();
+      }
+
+      function over(msg) {
+        locked = true;
+        stop();
+        api.step(cards.length, cards.length);
+        api.say(msg);
+        wait(1700, () => api.finish());
+      }
+
+      draw();
+      return {
+        destroy() {
+          gone = true; locked = true;
+          stop();
+          timers.forEach(clearTimeout);
+          timers.length = 0;
+          cancelAnimationFrame(fitRaf); fitRaf = 0;
+          removeEventListener('resize', refit);
+        },
+      };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+
+  const X0 = 118;      
+  const X1 = 30;       
+   
+  const SOFF = 2;
+   
+  const START = 5;
+  const NEAR = 2;      
+
+  function css() {
+    if (typeof document === 'undefined' || document.getElementById('css-nokhitha')) return;
+    const st = document.createElement('style');
+    st.id = 'css-nokhitha';
+    st.textContent =
+      '.nk{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:.45em}' +
+       
+      '.nk-sea{width:100%;flex:1 1 0;min-height:3.2em;max-height:min(40vh,30vw);' +
+      'display:grid;place-items:stretch}' +
+      '.nk-sea svg{width:100%;height:100%;display:block}' +
+      '.nk-ask{flex:0 0 auto;width:min(34em,100%);display:flex;flex-direction:column;' +
+      'align-items:center;gap:.35em}' +
+       
+      '.nk-tags{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;' +
+      'justify-content:center;gap:.2em .45em}' +
+      '.nk-tags:empty{display:none}' +
+      '.nk-body{width:100%;display:flex;flex-direction:column;align-items:center;gap:.35em}' +
+       
+      '.nk-q{font-size:clamp(17px,1.75em,40px)}' +
+      '.nk .gw-opt{font-size:clamp(16px,1.15em,34px)}' +
+       
+      '.nk-call{margin:0;text-align:center;font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(20px,2.2em,64px);line-height:1.2;color:var(--sea-coral);' +
+      'overflow-wrap:anywhere}' +
+      '.nk-act{margin:0;text-align:center;font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(16px,1.35em,40px);line-height:1.3;overflow-wrap:anywhere}' +
+       
+      '.nk-do{display:flex;gap:.4em;flex-wrap:wrap;justify-content:center;width:100%}' +
+      '.nk-b{font:inherit;font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(14px,1em,28px);line-height:1;cursor:pointer;' +
+      'min-height:44px;padding:0 1em;border:var(--sea-bd) solid var(--sea-ink);' +
+      'border-radius:var(--sea-r);background:var(--sea-white);color:var(--sea-ink);' +
+      'box-shadow:0 4px 0 var(--sea-ink)}' +
+      '.nk-b:active{transform:translateY(2px);box-shadow:0 2px 0 var(--sea-ink)}' +
+      '.nk-b-main{background:var(--sea-coral);color:var(--sea-white)}' +
+       
+      '.nk-boat,.nk-storm{transition:transform .42s ease}' +
+      '@keyframes nkBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.3px)}}' +
+      '.nk-bob{animation:nkBob 2.4s ease-in-out infinite}' +
+      '.nk-bob-s{animation:nkBob 3.2s ease-in-out infinite}' +
+       
+      '@media (min-width:900px) and (min-height:560px){' +
+      '.nk .gw-opts{flex-direction:row;width:min(46em,100%)}' +
+      '.nk .gw-opt{flex:1 1 0;min-width:0;justify-content:center;text-align:center}}' +
+       
+      '@media (max-height:560px) and (min-width:660px){' +
+      '.nk{flex-direction:row;align-items:stretch;gap:.5em}' +
+      '.nk-sea{flex:1 1 38%;max-height:none;min-height:0}' +
+      '.nk-ask{flex:1 1 62%;width:auto;justify-content:center;gap:.15em}' +
+       
+      '.nk-tags{gap:.12em .3em}' +
+      '.nk-body{gap:.16em}' +
+      '.nk .gw-head{font-size:clamp(13px,.95em,21px);line-height:1.22}' +
+      '.nk .gw-tag{font-size:.62em;padding:.26em .6em}' +
+      '.nk .nk-q{font-size:clamp(14px,1.22em,28px);line-height:1.25}' +
+       
+      '.nk .gw-opts{flex-direction:row;flex-wrap:wrap;gap:.16em}' +
+      '.nk .gw-opt{flex:1 1 46%;min-width:0;font-size:clamp(14px,1.02em,26px);padding:.2em .6em}' +
+      '.nk-call{font-size:clamp(18px,1.55em,40px)}' +
+      '.nk-act{font-size:clamp(15px,1.05em,28px)}' +
+      '.nk .gw-sub{font-size:.7em}}' +
+      '@media (prefers-reduced-motion:reduce){' +
+      '.nk-boat,.nk-storm{transition:none}.nk-bob,.nk-bob-s{animation:none}}';
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    kind: 'حركة',
+     
+    keys: { verb: 'حركة جسد', relation: 'الفصل ضد الوقت', second: 'مطاردة', form: 'سؤال بخيارات' },
+    id: 'nokhitha',
+    name: 'نداء النوخذة',
+    line: 'الفصل في مركب يهرب من عاصفة — والإجابة تدفعه، والنداء يدفعه أكثر.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'حين تقترب العاصفة يصير النداء بدفعتين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="10" width="108" height="58" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="10" y="44" width="100" height="20" rx="6" fill="var(--sea-teal)"/>' +
+        '<circle cx="86" cy="28" r="11" fill="var(--sea-sub)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<circle cx="97" cy="32" r="8" fill="var(--sea-sub)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M84 42 L81 50" stroke="var(--sea-sub)" stroke-width="3" stroke-linecap="round"/>' +
+        '<path d="M94 43 L91 51" stroke="var(--sea-sub)" stroke-width="3" stroke-linecap="round"/>' +
+        '<rect x="20" y="16" width="4" height="30" fill="var(--sea-ink)"/>' +
+        '<path d="M26 17 L36 21 L26 25 Z" fill="var(--sea-coral)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '<path d="M56 20 L56 44 L40 44 Z" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>' +
+        '<path d="M60 26 L60 44 L72 44 Z" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>' +
+        '<rect x="56" y="18" width="3" height="28" fill="var(--sea-ink)"/>' +
+        '<path d="M42 46 L76 46 L70 56 L48 56 Z" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      css();
+
+      const N = api.qs.length;
+       
+      const GOAL = START + Math.max(8, Math.round(N * 1.6));
+      const DX = (X0 - X1) / GOAL;
+
+      const CALLS = (api.theme && api.theme.calls) ? api.theme.calls(N + 2) : [
+        { call: 'استعدّوا', act: 'قفوا ثم اجلسوا' },
+        { call: 'ادفعوا', act: 'مدّوا أذرعكم إلى الأمام' },
+        { call: 'انتبهوا', act: 'ميلوا يميناً ثم يساراً' },
+      ];
+
+      let boat = START, storm = 0;
+      let i = 0, locked = false, gone = false, over = false;
+      const timers = [];
+      const wait = (ms, fn) => { const t = setTimeout(() => { if (!gone) fn(); }, ms); timers.push(t); return t; };
+
+      const xBoat = () => +(X0 - boat * DX).toFixed(2);
+      const xStorm = () => +(X0 - storm * DX + SOFF).toFixed(2);
+      const gapNow = () => Math.max(0, boat - storm);
+      const boostOn = () => gapNow() <= NEAR;
+
+      function waves(x) {
+        if (x === 1) return 'موجة واحدة';
+        if (x === 2) return 'موجتان';
+        return api.AR(x) + (x <= 10 ? ' موجات' : ' موجة');
+      }
+
+      function port() {
+        return '<rect x="9.6" y="33" width="2.6" height="8" fill="var(--sea-ink)"/>' +
+               '<rect x="20.4" y="33" width="2.6" height="8" fill="var(--sea-ink)"/>' +
+               '<rect x="6" y="28" width="21" height="5.4" rx="1.6" fill="var(--sea-sand)" ' +
+                 'stroke="var(--sea-ink)" stroke-width="2"/>' +
+               '<rect x="14.4" y="8" width="2.6" height="20" fill="var(--sea-ink)"/>' +
+               '<path d="M17 9 L26 12.6 L17 16.2 Z" fill="var(--sea-coral)" ' +
+                 'stroke="var(--sea-ink)" stroke-width="2" stroke-linejoin="round"/>';
+      }
+
+      function boatArt() {
+         
+        return '<path d="M-11 34.6 L14 34.6 L10.6 41.6 L-6.4 41.6 Z" fill="var(--sea-ink)"/>' +
+               '<rect x="-1.1" y="13" width="2.3" height="20" fill="var(--sea-ink)"/>' +
+               '<path d="M-0.7 13.6 L-0.7 31.6 L-12.6 31.6 Z" fill="var(--sea-white)" ' +
+                 'stroke="var(--sea-ink)" stroke-width="2" stroke-linejoin="round"/>' +
+               '<path d="M1.5 17.4 L1.5 31.6 L9.6 31.6 Z" fill="var(--sea-sun)" ' +
+                 'stroke="var(--sea-ink)" stroke-width="2" stroke-linejoin="round"/>' +
+               '<path d="M1.2 13.4 L6.2 15.1 L1.2 16.8 Z" fill="var(--sea-coral)" ' +
+                 'stroke="var(--sea-ink)" stroke-width="1.6" stroke-linejoin="round"/>' +
+               '<path d="M-12.6 33 L12.6 33 L9.2 40 L-7.8 40 Z" fill="var(--sea-sand)" ' +
+                 'stroke="var(--sea-ink)" stroke-width="2" stroke-linejoin="round"/>' +
+               '<path d="M12.6 33 L15.6 25.6" fill="none" stroke="var(--sea-ink)" ' +
+                 'stroke-width="2" stroke-linecap="round"/>';
+      }
+
+      function cloud(grow, fill, dx, dy) {
+        return '<circle cx="' + (6.5 + dx) + '" cy="' + (17 + dy) + '" r="' + (6.5 + grow) + '" fill="' + fill + '"/>' +
+               '<circle cx="' + (15 + dx) + '" cy="' + (12 + dy) + '" r="' + (9.5 + grow) + '" fill="' + fill + '"/>' +
+               '<circle cx="' + (25 + dx) + '" cy="' + (15.5 + dy) + '" r="' + (8 + grow) + '" fill="' + fill + '"/>' +
+                
+               '<rect x="' + (4 - grow + dx) + '" y="' + (15 - grow + dy) + '" width="' + (150 + grow) +
+                 '" height="' + (8 + grow * 2) + '" rx="' + (3.5 + grow) + '" fill="' + fill + '"/>';
+      }
+
+      function stormArt() {
+        let s = cloud(2, 'var(--sea-ink)', 2.4, 2.4) +    
+                cloud(2, 'var(--sea-ink)', 0, 0) +        
+                cloud(0, 'var(--sea-sub)', 0, 0);         
+         
+        for (let k = 0; k < 6; k++) {
+          const x = 5 + k * 7;
+          s += '<path d="M' + x + ' 24 L' + (x - 2.4) + ' 33" stroke="var(--sea-sub)" ' +
+               'stroke-width="2.4" stroke-linecap="round"/>';
+        }
+         
+        s += '<path d="M-2 37 q4 -3.4 8 0 q4 3.4 8 0 q4 -3.4 8 0" fill="none" ' +
+             'stroke="var(--sea-white)" stroke-width="2" stroke-linecap="round"/>';
+        return s;
+      }
+
+      function scene() {
+        const F = 'x="1.5" y="1.5" width="147" height="45" rx="6"';
+        let s = '<svg viewBox="0 0 150 48" role="img" aria-label="' +
+                'رحلة المركب: الميناء إلى اليسار والعاصفة خلفه إلى اليمين">' +
+                '<defs><clipPath id="nkClip"><rect ' + F + '/></clipPath></defs>' +
+                '<rect ' + F + ' fill="var(--sea-white)"/>' +
+                '<g clip-path="url(#nkClip)">' +
+                '<rect x="0" y="33" width="150" height="15" fill="var(--sea-teal)"/>';
+         
+        for (let k = 0; k < 9; k++) {
+          const x = 6 + k * 16;
+          s += '<path d="M' + x + ' 43.6 q3 -2.6 6 0" fill="none" stroke="var(--sea-white)" ' +
+               'stroke-width="1.8" stroke-linecap="round"/>';
+        }
+        s += port();
+        s += '<g class="nk-storm" id="nkStorm" style="transform:translateX(' + xStorm() + 'px)">' +
+               '<g class="nk-bob-s">' + stormArt() + '</g></g>';
+        s += '<g class="nk-boat" id="nkBoat" style="transform:translateX(' + xBoat() + 'px)">' +
+               '<g class="nk-bob">' + boatArt() + '</g></g>';
+        s += '</g><rect ' + F + ' fill="none" stroke="var(--sea-ink)" stroke-width="2.5"/>';
+        return s + '</svg>';
+      }
+
+      el.innerHTML =
+        '<div class="nk">' +
+          '<div class="nk-sea">' + scene() + '</div>' +
+          '<div class="nk-ask">' +
+            '<div class="nk-tags" id="nkTags"></div>' +
+            '<div class="nk-body" id="nkBody"></div>' +
+          '</div>' +
+        '</div>';
+
+      const $ = s => el.querySelector(s);
+      const elTags = $('#nkTags'), elBody = $('#nkBody'),
+            elBoat = $('#nkBoat'), elStorm = $('#nkStorm');
+
+      function place() {
+        if (elBoat) elBoat.style.transform = 'translateX(' + xBoat() + 'px)';
+        if (elStorm) elStorm.style.transform = 'translateX(' + xStorm() + 'px)';
+      }
+
+      function tags() {
+        const g = gapNow(), rem = GOAL - boat;
+        let h = '';
+        if (boostOn()) h += '<p class="gw-tag">العاصفة قريبة — النداء بدفعتين</p>';
+        h += '<p class="gw-head">بين المركب والعاصفة ' + api.esc(waves(g)) +
+             (rem > 0 && rem <= 3 ? ' — وإلى الميناء ' + api.esc(waves(rem)) : '') + '</p>';
+        elTags.innerHTML = h;
+      }
+
+      function headline(text) {
+        elTags.innerHTML = '<p class="gw-head">' + api.esc(text) + '</p>';
+      }
+
+      function push(n) {
+        const add = Math.min(GOAL, boat + n) - boat;
+        if (add <= 0) return;
+        boat += add;
+        place();
+      }
+
+      function ask() {
+        const q = api.qs[i];
+        if (!q) return finishRun();
+        api.step(i, N);
+        locked = false;
+        tags();
+        elBody.innerHTML =
+          '<h2 class="gw-q nk-q">' + api.esc(q.q) + '</h2>' +
+          '<div class="gw-opts">' + q.a.map((t, k) =>
+            '<button class="gw-opt" type="button" data-k="' + k + '">' +
+              '<span class="k">' + (KEY[k] || '') + '</span><span>' + api.esc(t) + '</span>' +
+            '</button>').join('') + '</div>';
+        elBody.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => choose(+b.dataset.k); });
+      }
+
+      function choose(k) {
+        if (locked || over) return;
+        locked = true;
+        const q = api.qs[i], ok = k === q.c;
+        elBody.querySelectorAll('.gw-opt').forEach((b, m) => {
+          b.disabled = true;
+          if (m === q.c) b.dataset.st = 'ok';
+          else if (m === k) b.dataset.st = 'no';
+        });
+         
+        if (ok) { api.score(api.turn(), 1); push(1); tags(); }
+        api.judge(ok, { text: ok ? 'صحيح — تقدّم المركب' : 'خطأ — لم يتقدّم المركب' });
+        wait(1400, callPhase);
+      }
+
+      function callPhase() {
+        if (over) return;
+        locked = false;
+        const c = CALLS[i % CALLS.length] || { call: 'استعدّوا', act: 'قفوا ثم اجلسوا' };
+        const pts = boostOn() ? 2 : 1;
+        tags();
+        elBody.innerHTML =
+          '<p class="nk-call">' + api.esc(c.call) + '</p>' +
+          '<p class="nk-act">' + api.esc(c.act) + '</p>' +
+          '<div class="nk-do gw-mine">' +
+            '<button class="nk-b nk-b-main" type="button" data-d="1">نفّذوه</button>' +
+            '<button class="nk-b" type="button" data-d="0">تخطَّ النداء</button>' +
+          '</div>' +
+          '<p class="gw-sub gw-mine">اقرأ النداء بصوت عالٍ، ثم اضغط بعد أن ينفّذه الطلبة.</p>';
+        elBody.querySelectorAll('[data-d]').forEach(b => {
+          b.onclick = () => answerCall(b.dataset.d === '1', pts);
+        });
+      }
+
+      function answerCall(did, pts) {
+        if (locked || over) return;
+        locked = true;
+        elBody.querySelectorAll('[data-d]').forEach(b => { b.disabled = true; });
+        if (did) {
+          push(pts);
+          api.sfx('good');
+          api.say(pts > 1 ? 'دفعتان للمركب' : 'دفعة للمركب', 'good');
+        } else {
+          api.sfx('soft');
+          api.say('مرّ النداء بلا دفعة', 'bad');
+        }
+        tags();
+        wait(900, sail);
+      }
+
+      function sail() {
+        if (over) return;
+        storm++;
+        place();
+        api.sfx('turn');
+         
+        if (boat >= GOAL) return endRun('بلغ المركب الميناء', 'good');
+        if (boat <= storm) return endRun('لحقت العاصفة بالمركب', 'bad');
+        tags();
+        wait(700, () => {
+          i++;
+          if (i >= N) return finishRun();
+          api.nextTurn();
+          ask();
+        });
+      }
+
+      function finishRun() { endRun('انتهت الأسئلة والمركب في عرض البحر', ''); }
+
+      function endRun(text, kind) {
+        if (over) return;
+        over = true; locked = true;
+        headline(text);
+        api.say(text, kind);
+        wait(1100, () => { api.step(N, N); api.finish(); });
+      }
+
+      ask();
+
+      return {
+        destroy() {
+          gone = true; locked = true; over = true;
+          timers.forEach(t => clearTimeout(t));
+          timers.length = 0;
+        },
+      };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+
+  const SECS = 60;         
+  const SECS_BACK = 90;    
+  const GAP = 3;           
+  const MAX_TERMS = 8;     
+
+  if (!document.getElementById('css-draw')) {
+    const st = document.createElement('style');
+    st.id = 'css-draw';
+    st.textContent =
+      '.dw{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:.4em}' +
+       
+      '.dw-top{width:min(34em,100%);display:flex;align-items:center;' +
+      'justify-content:space-between;gap:.5em}' +
+      '.dw-t{font-family:var(--sea-display);font-weight:800;line-height:1.15;' +
+      'font-size:clamp(17px,1.3em,38px)}' +
+       
+      '.dw-bar{width:min(34em,100%);flex:none;height:.7em;min-height:12px;overflow:hidden;' +
+      'border:2px solid var(--sea-ink);border-radius:999px;background:var(--sea-white)}' +
+      '.dw-bar s{display:block;height:100%;text-decoration:none;' +
+      'background:var(--sea-teal);transition:width .2s linear}' +
+      '.dw-bar[data-low="1"] s{background:var(--sea-coral)}' +
+       
+      '.dw-pad{flex:1 1 auto;min-height:0;width:min(34em,100%);overflow:hidden;' +
+      'border:var(--sea-bd) solid var(--sea-ink);border-radius:var(--sea-r);' +
+      'background:var(--sea-white);box-shadow:0 4px 0 var(--sea-ink)}' +
+       
+      '.dw-pad canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}' +
+       
+      '.dw-card{width:min(30em,100%);display:flex;flex-direction:column;align-items:center;' +
+      'gap:.4em;padding:.6em .7em;border:var(--sea-bd) solid var(--sea-ink);' +
+      'border-radius:var(--sea-r);background:var(--sea-white);box-shadow:0 5px 0 var(--sea-ink)}' +
+      '.dw-term{margin:0;font-family:var(--sea-display);font-weight:800;text-align:center;' +
+      'font-size:clamp(20px,1.5em,44px);line-height:1.25;color:var(--sea-coral);' +
+      'overflow-wrap:anywhere}' +
+       
+      '.dw-row{width:min(34em,100%);display:flex;gap:.35em;flex-wrap:wrap;justify-content:center}' +
+      '.dw-b{font:inherit;font-size:clamp(13px,.85em,26px);font-weight:700;cursor:pointer;' +
+      'flex:1 1 auto;min-height:44px;padding:0 .8em;border:2px solid var(--sea-ink);' +
+      'border-radius:999px;background:var(--sea-white);color:var(--sea-ink)}' +
+      '.dw-b:active{transform:translate(1px,1px)}' +
+      '.dw-b-main{background:var(--sea-sun);font-weight:800}' +
+       
+      '@media (max-height:460px){.dw-pad{min-height:96px}.dw-bar{height:.55em}}' +
+      '@media (prefers-reduced-motion:reduce){.dw-bar s{transition:none}}';
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    kind: 'رسم',
+     
+    keys: { verb: 'رسم', relation: 'فرق ضد فرق', second: 'لا شيء', form: 'قائمة مصطلحات' },
+    id: 'draw',
+    name: 'ارسم وخمّن',
+    line: 'طالب يرسم المصطلح بإصبعه على الموبايل، وفريقه يخمّن قبل انتهاء الوقت.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 5,
+    comeback: 'المتأخّر بثلاث نقاط يأخذ وقتاً أطول',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="8" width="108" height="64" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="14" y="17" width="66" height="46" rx="6" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M24 50 q9 -22 20 -8 q9 12 22 -14" fill="none" stroke="var(--sea-teal)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<g transform="rotate(18 99 40)">' +
+          '<rect x="94" y="20" width="10" height="34" rx="2" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+          '<path d="M94 54 L104 54 L99 64 Z" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>' +
+          '<path d="M96.6 59 L101.4 59 L99 63.5 Z" fill="var(--sea-ink)"/>' +
+        '</g>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      const T = api.teams;
+      const terms = S.forms.terms(api.qs, api.rnd() * 1e9 | 0, MAX_TERMS);
+
+      let INK = '';
+      try { INK = (getComputedStyle(document.documentElement).getPropertyValue('--sea-ink') || '').trim(); }
+      catch (e) { console.warn('SHIFT: تعذّرت قراءة لون الحبر —', e && e.message); }
+
+      let i = 0;                  
+      let phase = 'peek';         
+      let seen = false;           
+      let locked = false;
+      let gone = false;
+      let wonRound = false;
+
+      const timers = [];
+      const wait = (ms, fn) => { const t = setTimeout(() => { if (!gone) fn(); }, ms); timers.push(t); return t; };
+
+      let cv = null, ctx = null, ro = null;
+      let padW = 1, padH = 1;
+      const strokes = [];         
+      let cur = null;
+       
+      let penId = null;
+
+      function pen() {
+        if (!ctx) return;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.lineWidth = Math.max(3, Math.round(Math.min(padW, padH) * 0.014));
+        if (INK) { ctx.strokeStyle = INK; ctx.fillStyle = INK; }
+      }
+
+      function paint() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, padW, padH);
+        pen();
+        strokes.forEach(s => {
+          if (!s.length) return;
+          if (s.length === 1) {
+             
+            ctx.beginPath();
+            ctx.arc(s[0].x * padW, s[0].y * padH, ctx.lineWidth / 2, 0, Math.PI * 2);
+            ctx.fill();
+            return;
+          }
+          ctx.beginPath();
+          s.forEach((p, k) => { if (k) ctx.lineTo(p.x * padW, p.y * padH); else ctx.moveTo(p.x * padW, p.y * padH); });
+          ctx.stroke();
+        });
+      }
+
+      function fit() {
+        if (!cv) return;
+        const r = cv.getBoundingClientRect();
+        padW = Math.max(1, Math.round(r.width));
+        padH = Math.max(1, Math.round(r.height));
+         
+        const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+        cv.width = Math.round(padW * dpr);
+        cv.height = Math.round(padH * dpr);
+        ctx = cv.getContext('2d');
+        if (!ctx) return;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        paint();
+      }
+
+      function at(e) {
+        const r = cv.getBoundingClientRect();
+        const x = (e.clientX - r.left) / (r.width || 1);
+        const y = (e.clientY - r.top) / (r.height || 1);
+        return { x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) };
+      }
+
+      function down(e) {
+        if (phase !== 'draw' || locked) return;
+        if (penId !== null) return;           
+        e.preventDefault();
+        penId = e.pointerId;
+         
+        try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+        cur = [at(e)];
+        strokes.push(cur);
+        paint();
+      }
+      function move(e) {
+        if (!cur || e.pointerId !== penId) return;
+        e.preventDefault();
+        const a = cur[cur.length - 1], b = at(e);
+        cur.push(b);
+         
+        if (ctx) { ctx.beginPath(); ctx.moveTo(a.x * padW, a.y * padH); ctx.lineTo(b.x * padW, b.y * padH); ctx.stroke(); }
+      }
+       
+      function up(e) { if (e && e.pointerId !== penId) return; penId = null; cur = null; }
+
+      function bindPad() {
+        cv = el.querySelector('.dw-pad canvas');
+        penId = null; cur = null;    
+         
+        if (!cv) { ctx = null; if (ro) { try { ro.disconnect(); } catch (err) {} ro = null; } return; }
+        fit();
+        if (phase === 'draw') {
+          cv.addEventListener('pointerdown', down);
+          cv.addEventListener('pointermove', move);
+          cv.addEventListener('pointerup', up);
+          cv.addEventListener('pointercancel', up);
+          cv.addEventListener('pointerleave', up);
+        }
+         
+        if (typeof ResizeObserver === 'function') {
+          if (ro) ro.disconnect();
+          ro = new ResizeObserver(() => fit());
+          ro.observe(cv);
+        }
+      }
+
+      let clock = 0, endAt = 0, span = 1;
+
+      function secsFor(t) {
+        const top = Math.max.apply(null, T.map(x => x.score || 0).concat([0]));
+        return (top - (T[t].score || 0)) >= GAP ? SECS_BACK : SECS;
+      }
+
+      function stopClock() { if (clock) { clearInterval(clock); clock = 0; } }
+
+      function startClock(secs) {
+        span = secs * 1000;
+        endAt = Date.now() + span;
+        stopClock();
+        tick();
+         
+        clock = setInterval(tick, 200);
+      }
+
+      function tick() {
+        if (gone) return stopClock();
+        const ms = Math.max(0, endAt - Date.now());
+        const bar = el.querySelector('.dw-bar');
+        const fill = el.querySelector('.dw-bar s');
+        const num = el.querySelector('.dw-t[data-clock]');
+        const left = Math.ceil(ms / 1000);
+        if (num) num.textContent = 'الوقت ' + api.AR(left);
+        if (fill) fill.style.width = (ms / span * 100) + '%';
+        if (bar) { if (left <= 10) bar.dataset.low = '1'; else bar.removeAttribute('data-low'); }
+        if (ms <= 0) { stopClock(); resolve(false); }
+      }
+
+      function render() {
+        const term = terms[i];
+        const t = api.turn();
+        const name = T[t] ? T[t].name : '';
+        const long = secsFor(t) > SECS;
+        let h = '';
+
+        if (phase === 'peek') {
+          h = '<div class="dw">' +
+            (long ? '<p class="gw-tag">وقتٌ أطول للمتأخّر — تسعون ثانية بدل ستّين</p>' : '') +
+            '<h2 class="gw-head">دور فريق ' + api.esc(name) + '</h2>' +
+            '<div class="dw-card gw-mine">' +
+              (seen
+                ? '<p class="dw-term">' + api.esc(term.t) + '</p>' +
+                  '<p class="gw-sub">ارسمه بإصبعك — بلا حروف ولا أرقام.</p>' +
+                  '<button class="dw-b dw-b-main" type="button" data-a="go">رأيته — ابدأ</button>'
+                : '<p class="gw-sub">أعطِ الموبايل للرسّام بعيداً عن نظر الصفّ.</p>' +
+                  '<button class="dw-b dw-b-main" type="button" data-a="see">أظهر المصطلح للرسّام</button>') +
+            '</div>' +
+          '</div>';
+        } else if (phase === 'draw') {
+          h = '<div class="dw">' +
+            (long ? '<p class="gw-tag">وقتٌ أطول للمتأخّر — تسعون ثانية بدل ستّين</p>' : '') +
+            '<div class="dw-top">' +
+              '<b class="dw-t">فريق ' + api.esc(name) + '</b>' +
+              '<b class="dw-t" data-clock="1">الوقت ' + api.AR(secsFor(t)) + '</b>' +
+            '</div>' +
+            '<div class="dw-bar"><s style="width:100%"></s></div>' +
+            '<div class="dw-pad"><canvas></canvas></div>' +
+            '<div class="dw-row gw-mine">' +
+              '<button class="dw-b" type="button" data-a="clear">امسح</button>' +
+              '<button class="dw-b dw-b-main" type="button" data-a="win">خمّنوا</button>' +
+              '<button class="dw-b" type="button" data-a="time">مرّ الوقت</button>' +
+            '</div>' +
+          '</div>';
+        } else {
+          h = '<div class="dw">' +
+            '<h2 class="gw-q">' + api.esc(term.t) + '</h2>' +
+            '<div class="dw-pad"><canvas></canvas></div>' +
+            '<p class="gw-sub">' +
+              (wonRound ? 'نقطة لفريق ' + api.esc(name) : 'مرّ الوقت — بلا خصم') +
+            '</p>' +
+          '</div>';
+        }
+
+        el.innerHTML = h;
+        bindPad();
+        el.querySelectorAll('[data-a]').forEach(b => { b.onclick = () => act(b.dataset.a); });
+      }
+
+      function act(a) {
+        if (a === 'see') { seen = true; api.sfx('pop'); return render(); }
+        if (a === 'go') { return begin(); }
+        if (a === 'clear') {
+          strokes.length = 0; penId = null; cur = null; paint(); api.sfx('soft');
+          return;
+        }
+        if (a === 'win') return resolve(true);
+        if (a === 'time') return resolve(false);
+        if (a === 'end') return api.finish();
+      }
+
+      function begin() {
+        phase = 'draw';
+        locked = false;
+        strokes.length = 0; penId = null; cur = null;
+        api.sfx('turn');
+        render();
+        startClock(secsFor(api.turn()));
+      }
+
+      function resolve(ok) {
+        if (locked || phase !== 'draw') return;
+        locked = true;
+        stopClock();
+        wonRound = !!ok;
+        const t = api.turn();
+         
+        if (ok) api.score(t, 1);
+        phase = 'end';
+        render();
+        api.judge(ok, {
+          text: ok ? 'أحسنتم — المصطلح: ' + terms[i].t : 'المصطلح: ' + terms[i].t,
+        });
+        wait(2200, next);
+      }
+
+      function next() {
+        i++;
+        api.step(i, terms.length);
+        if (i >= terms.length) return api.finish();
+        api.nextTurn();
+        phase = 'peek'; seen = false; locked = false; wonRound = false;
+        strokes.length = 0; penId = null; cur = null;
+        render();
+      }
+
+      if (!terms.length) {
+        api.step(0, 0);
+        el.innerHTML = '<div class="dw">' +
+          '<h2 class="gw-head">لا مصطلح قصيراً يصلح للرسم في هذه الأسئلة.</h2>' +
+          '<p class="gw-sub">الإجابات الصحيحة هنا جملٌ طويلة — جرّب لعبة أخرى بالأسئلة نفسها.</p>' +
+          '<div class="dw-row gw-mine"><button class="dw-b dw-b-main" type="button" data-a="end">انتقل إلى النتيجة</button></div>' +
+        '</div>';
+        el.querySelectorAll('[data-a]').forEach(b => { b.onclick = () => act(b.dataset.a); });
+      } else {
+        api.step(0, terms.length);
+        render();
+      }
+
+      return {
+        destroy() {
+          gone = true; locked = true;
+          stopClock();
+          timers.forEach(clearTimeout);
+          timers.length = 0;
+          if (ro) { try { ro.disconnect(); } catch (e) {} ro = null; }    
+          cv = null; ctx = null; cur = null; penId = null;
+        },
+      };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const SECS = 90;       
+  const LAST = 20;       
+  const GRAB = 6;        
+
+  if (!document.getElementById('css-baskets')) {
+    const st = document.createElement('style');
+    st.id = 'css-baskets';
+    st.textContent =
+      '.bk{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:.4em}' +
+      '.bk .gw-tag[hidden]{display:none}' +
+       
+      '.bk-time{width:min(30em,100%);display:flex;align-items:center;gap:.45em}' +
+      '.bk-time b{font-family:var(--sea-display);font-weight:800;line-height:1;' +
+      'font-size:clamp(17px,1.25em,38px);min-width:2.1em;text-align:center}' +
+      '.bk-time em{font-style:normal;font-weight:600;line-height:1;' +
+      'font-size:clamp(16px,1.15em,34px);color:var(--sea-sub)}' +
+      '.bk-track{flex:1 1 auto;min-width:0;height:.85em;min-height:14px;overflow:hidden;' +
+      'border:2px solid var(--sea-ink);border-radius:999px;background:var(--sea-white)}' +
+      '.bk-track s{display:block;height:100%;width:100%;text-decoration:none;' +
+      'background:var(--sea-teal);transition:width .2s linear}' +
+      '.bk-time[data-last="1"] b{color:var(--sea-coral)}' +
+      '.bk-time[data-last="1"] .bk-track s{background:var(--sea-coral)}' +
+       
+      '.bk-mid{flex:0 1 auto;min-height:0;width:min(28em,100%);overflow:hidden;' +
+      'display:flex;align-items:center;justify-content:center}' +
+      '.bk[data-drag="1"] .bk-mid{overflow:visible}' +
+       
+      '.bk-card{width:100%;min-height:4.4em;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:.25em;padding:.45em .7em;' +
+      'border:var(--sea-bd) solid var(--sea-ink);border-radius:var(--sea-r);' +
+      'background:var(--sea-white);box-shadow:0 5px 0 var(--sea-ink);' +
+      'touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}' +
+      '.bk-card[data-grab="1"]{cursor:grabbing;position:relative;z-index:2;' +
+      'box-shadow:0 9px 0 var(--sea-ink)}' +
+      '.bk-card[data-st="ok"]{border-color:var(--sea-t3);box-shadow:0 5px 0 var(--sea-t3)}' +
+      '.bk-card[data-st="no"]{border-color:var(--sea-coral);box-shadow:0 5px 0 var(--sea-coral)}' +
+      '.bk-q{margin:0;text-align:center;overflow-wrap:anywhere;' +
+      'font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(17px,1.3em,40px);line-height:1.3}' +
+      '.bk-a{margin:0;text-align:center;overflow-wrap:anywhere;color:var(--sea-coral);' +
+      'font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(18px,1.55em,46px);line-height:1.25}' +
+       
+      '.bk-bs{width:min(30em,100%);display:flex;gap:.5em}' +
+      '.bk-b{flex:1 1 0;min-width:0;font:inherit;font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(18px,1.45em,44px);line-height:1.2;cursor:pointer;' +
+      'min-height:max(44px,2.3em);padding:.15em .5em;' +
+      'border:var(--sea-bd) solid var(--sea-ink);border-radius:var(--sea-r);' +
+      'color:var(--sea-white);box-shadow:0 5px 0 var(--sea-ink)}' +
+      '.bk-b[data-v="1"]{background:var(--sea-t3)}' +
+      '.bk-b[data-v="0"]{background:var(--sea-coral)}' +
+      '.bk-b:active{transform:translateY(2px);box-shadow:0 2px 0 var(--sea-ink)}' +
+       
+      '.bk-b[data-over="1"]{transform:translateY(2px);box-shadow:0 2px 0 var(--sea-ink);' +
+      'outline:3px solid var(--sea-sun);outline-offset:3px}' +
+      '.bk-b[data-st="ok"]{outline:3px solid var(--sea-ink);outline-offset:3px}' +
+      '.bk-b[data-st="no"]{outline:3px dashed var(--sea-ink);outline-offset:3px}' +
+      '.bk-b[disabled]{cursor:default}' +
+       
+      '@media (max-height:460px){.bk{gap:.25em}.bk-card{min-height:0;padding:.3em .6em}' +
+       
+      '.bk-q{font-size:clamp(13px,1.3em,40px)}.bk-a{font-size:clamp(14px,1.55em,46px)}' +
+       
+      '.bk .gw-tag{font-size:.62em;padding:.25em .6em}' +
+      '.bk-b{min-height:44px}}' +
+      '@media (prefers-reduced-motion:reduce){.bk-track s{transition:none}}';
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    kind: 'سرعة',
+     
+    keys: { verb: 'سحب وفرز', relation: 'الفصل ضد الوقت', second: 'لا شيء', form: 'بطاقة حكم' },
+    id: 'baskets',
+    name: 'السلال',
+    line: 'بطاقة وإجابة — تُسحب إلى سلّة صح أو سلّة خطأ، والوقت يجري.',
+    mins: [8, 12],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 8,
+    comeback: 'آخر عشرين ثانية كل بطاقة بنقطتين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="5" y="6" width="110" height="68" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="45" y="12" width="32" height="23" rx="4" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5" transform="rotate(-8 61 23)"/>' +
+        '<path d="M61 37 V45" stroke="var(--sea-ink)" stroke-width="3" stroke-linecap="round"/>' +
+        '<path d="M14 47 H50 L45 68 H19 Z" fill="var(--sea-t3)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>' +
+        '<path d="M70 47 H106 L101 68 H75 Z" fill="var(--sea-coral)" stroke="var(--sea-ink)" stroke-width="2.5" stroke-linejoin="round"/>' +
+        '<path d="M26 55 l5 5 l9 -9" fill="none" stroke="var(--sea-white)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<path d="M83 55 l10 10 M93 55 l-10 10" stroke="var(--sea-white)" stroke-width="3" stroke-linecap="round"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+       
+      const cards = S.forms.judge(api.qs, api.rnd() * 1e9 | 0);
+      const timers = [];
+      let i = 0, locked = true, gone = false, over = false, drag = null, tagOn = false;
+
+      const wait = (ms, fn) => { const t = setTimeout(() => { if (!gone) fn(); }, ms); timers.push(t); return t; };
+
+      el.innerHTML =
+        '<div class="bk">' +
+          '<p class="gw-tag" hidden>آخر عشرين ثانية — كل بطاقة بنقطتين</p>' +
+          '<div class="bk-time" data-last="0">' +
+            '<b></b><em>ثانية</em>' +
+            '<span class="bk-track"><s></s></span>' +
+          '</div>' +
+          '<div class="bk-mid">' +
+            '<div class="bk-card"><p class="bk-q"></p><p class="bk-a"></p></div>' +
+          '</div>' +
+          '<div class="bk-bs">' +
+            '<button class="bk-b" type="button" data-v="1">صح</button>' +
+            '<button class="bk-b" type="button" data-v="0">خطأ</button>' +
+          '</div>' +
+          '<p class="gw-sub gw-mine">اسحب البطاقة إلى سلّتها، أو المس السلّة.</p>' +
+        '</div>';
+
+      const wrap = el.querySelector('.bk');
+      const elTag = el.querySelector('.gw-tag');
+      const elTime = el.querySelector('.bk-time');
+      const elSec = elTime.querySelector('b');
+      const elBar = el.querySelector('.bk-track s');
+      const elMid = el.querySelector('.bk-mid');
+      const elCard = el.querySelector('.bk-card');
+      const elQ = el.querySelector('.bk-q');
+      const elA = el.querySelector('.bk-a');
+      const bs = Array.prototype.slice.call(el.querySelectorAll('.bk-b'));
+
+      function fit() {
+        if (gone) return;
+        elCard.style.fontSize = '';
+        for (let f = 100, n = 0; n < 10; n++) {
+          const box = elMid.clientHeight;
+          if (!box || elCard.getBoundingClientRect().height <= box + 0.5) return;
+          f -= 5;
+          if (f <= 45) { elCard.style.fontSize = '45%'; return; }
+          elCard.style.fontSize = f + '%';
+        }
+      }
+       
+      const onSize = () => fit();
+      addEventListener('resize', onSize);
+      if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+        document.fonts.ready.then(() => { if (!gone) fit(); }, () => {});
+      }
+
+      const t0 = Date.now();
+      const leftMs = () => Math.max(0, SECS * 1000 - (Date.now() - t0));
+      const boost = () => leftMs() <= LAST * 1000 && leftMs() > 0;
+
+      function clock() {
+        if (gone) return;
+        const ms = leftMs();
+        const sec = api.AR(Math.ceil(ms / 1000));
+        if (elSec.textContent !== sec) elSec.textContent = sec;
+        elBar.style.width = (ms / (SECS * 10)) + '%';
+        const last = boost();
+        elTime.dataset.last = last ? '1' : '0';
+         
+        if (last !== tagOn) { tagOn = last; elTag.hidden = !last; fit(); }
+         
+        if (ms <= 0 && !locked) end('انتهى الوقت');
+      }
+       
+      clock();
+      const tick = setInterval(clock, 200);
+
+      function draw() {
+        const c = cards[i];
+        if (!c) return end('انتهت البطاقات');
+        api.step(i, cards.length);
+         
+        api.setTurn(i % api.teams.length);
+        locked = false;
+         
+        elQ.textContent = c.q;
+        elA.textContent = c.shown;
+        elCard.removeAttribute('data-st');
+        elCard.style.transform = '';
+        bs.forEach(b => { b.disabled = false; b.removeAttribute('data-st'); b.removeAttribute('data-over'); });
+        fit();           
+      }
+
+      function sort(said) {
+        if (locked || gone) return;
+        const c = cards[i];
+        if (!c) return;
+        locked = true;
+        const ok = (said === c.ok);
+        const pts = boost() ? 2 : 1;
+        if (ok) api.score(api.turn(), pts);    
+        mark(null);
+        bs.forEach(b => {
+          b.disabled = true;
+          if ((b.dataset.v === '1') === said) b.dataset.st = ok ? 'ok' : 'no';
+        });
+        elCard.dataset.st = ok ? 'ok' : 'no';
+        api.judge(ok, {
+          text: ok ? (pts > 1 ? 'في سلّتها — نقطتان' : 'في سلّتها') : ('الصحيح: ' + c.right),
+        });
+        wait(ok ? 650 : 1100, next);
+      }
+
+      function next() {
+        i++;
+        if (gone || over) return;
+        if (i >= cards.length) return end('انتهت البطاقات');
+        if (leftMs() <= 0) return end('انتهى الوقت');
+        draw();
+      }
+
+      function end(why) {
+        if (over || gone) return;
+        over = true; locked = true;
+        clearInterval(tick);
+        bs.forEach(b => { b.disabled = true; });
+        api.step(Math.min(i, cards.length), cards.length);
+        api.say(why);
+        api.finish();
+      }
+
+      function basketAt(x, y) {
+        for (let k = 0; k < bs.length; k++) {
+          const r = bs[k].getBoundingClientRect();
+          if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return bs[k].dataset.v === '1';
+        }
+        return null;
+      }
+      function mark(v) {
+        bs.forEach(b => {
+          if (v !== null && (b.dataset.v === '1') === v) b.dataset.over = '1';
+          else b.removeAttribute('data-over');
+        });
+      }
+      function release() {
+        drag = null;
+        wrap.removeAttribute('data-drag');
+        elCard.removeAttribute('data-grab');
+        elCard.style.transform = '';
+        mark(null);
+      }
+
+      elCard.addEventListener('pointerdown', e => {
+        if (locked || gone || !e.isPrimary) return;
+        try { elCard.setPointerCapture(e.pointerId); } catch (err) {
+           
+          console.warn('SHIFT: تعذّر التقاط المؤشّر في السلال، والفرز باللمس وحده —', err && err.message);
+          return;
+        }
+        drag = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+        wrap.dataset.drag = '1';
+        elCard.dataset.grab = '1';
+      });
+      elCard.addEventListener('pointermove', e => {
+        if (!drag || e.pointerId !== drag.id) return;
+        const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+        if (!drag.moved && (Math.abs(dx) > GRAB || Math.abs(dy) > GRAB)) drag.moved = true;
+        elCard.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+        if (drag.moved) mark(basketAt(e.clientX, e.clientY));
+      });
+      elCard.addEventListener('pointerup', e => {
+        if (!drag || e.pointerId !== drag.id) return;
+        const moved = drag.moved, v = basketAt(e.clientX, e.clientY);
+        release();
+         
+        if (moved && v !== null) sort(v);
+      });
+      elCard.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag.id) release(); });
+
+      bs.forEach(b => { b.onclick = () => { if (!drag) sort(b.dataset.v === '1'); }; });
+
+      draw();
+      return {
+        destroy() {
+          gone = true; locked = true;
+          clearInterval(tick);
+          timers.forEach(clearTimeout); timers.length = 0;
+          removeEventListener('resize', onSize);    
+        },
+      };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+
+  const COLS = 4, ROWS = 3, TILES = COLS * ROWS;    
+  const WIN = 4;         
+  const WIN_BACK = 5;    
+  const GAP = 3;         
+   
+  const HINTS = 3;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+   
+  const PTS = n => (n >= 3 && n <= 10 ? ' نقاط' : ' نقطة');
+
+  if (typeof document !== 'undefined' && !document.getElementById('css-reveal')) {
+    const st = document.createElement('style');
+    st.id = 'css-reveal';
+    st.textContent =
+      '.rv{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:.4em}' +
+       
+      '.rv-box{flex:1 1 auto;min-height:0;width:100%;display:grid;place-items:center;' +
+      'container-type:size}' +
+       
+      '.rv-pic{width:min(30em,100%);height:auto;' +
+      'aspect-ratio:' + COLS + '/' + ROWS + ';' +
+      'position:relative;overflow:hidden;' +
+      'display:grid;grid-template-columns:repeat(' + COLS + ',1fr);' +
+      'grid-template-rows:repeat(' + ROWS + ',1fr);' +
+      'border:var(--sea-bd) solid var(--sea-ink);border-radius:var(--sea-r);' +
+      'background:var(--sea-sand) center/cover no-repeat;box-shadow:0 5px 0 var(--sea-ink)}' +
+       
+      '.rv-pic{width:min(30em,100%,calc(100cqh * ' + COLS + ' / ' + ROWS + '))}' +
+      '.rv-t{position:relative;z-index:1;display:grid;place-items:center;' +
+      'background:var(--sea-closed);border:2px solid var(--sea-ink);' +
+      'transition:opacity .3s ease,transform .3s ease}' +
+      '.rv-t[data-alt="1"]{background:var(--sea-teal)}' +
+      '.rv-t svg{width:36%;max-width:44px;height:auto;display:block}' +
+      '.rv-t[data-off="1"]{opacity:0;transform:scale(.55)}' +
+       
+      '.rv-say{position:absolute;inset:0;z-index:0;display:grid;place-items:center;padding:.4em;' +
+      'font-family:var(--sea-display);font-weight:800;text-align:center;' +
+      'font-size:clamp(15px,1.25em,36px);line-height:1.3;color:var(--sea-sub)}' +
+      '.rv-side{flex:none;width:100%;display:flex;flex-direction:column;' +
+      'align-items:center;gap:.35em}' +
+       
+      '.rv-hint{margin:0;text-align:center;font-weight:600;line-height:1.35;' +
+      'font-size:clamp(15px,1.2em,36px);overflow-wrap:anywhere}' +
+       
+      '.rv-mine{display:flex;gap:.5em;width:min(26em,100%)}' +
+      '.rv-b{flex:1 1 0;font:inherit;font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(14px,.95em,28px);min-height:44px;padding:0 .6em;cursor:pointer;' +
+      'border:2px solid var(--sea-ink);border-radius:999px;' +
+      'background:var(--sea-white);color:var(--sea-ink)}' +
+      '.rv-b:active{transform:translate(1px,1px)}' +
+      '.rv-b[data-g="1"]{background:var(--sea-t3);color:var(--sea-white)}' +
+      '.rv-b[data-g="0"]{background:var(--sea-coral);color:var(--sea-white)}' +
+      '@media (prefers-reduced-motion:reduce){.rv-t{transition:none}}' +
+       
+      '@media (max-height:460px){' +
+      '.rv{flex-direction:row;align-items:stretch;gap:.5em}' +
+      '.rv-box{flex:1 1 38%;width:auto;min-width:0}' +
+      '.rv-side{flex:1 1 62%;min-width:0;justify-content:center;overflow:hidden}' +
+      '.rv-hint{font-size:clamp(14px,1em,26px)}' +
+      '}';
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    kind: 'حظّ',
+     
+    keys: { verb: 'رهان', relation: 'فرق ضد فرق', second: 'كشف', form: 'قائمة مصطلحات' },
+    id: 'reveal',
+    name: 'اكشف الصورة',
+    line: 'صورة تحت قطع — أجب فتكشف قطعة، أو خاطر وخمّن الصورة كلّها.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'تخمين المتأخّر بخمس نقاط لا أربع',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="8" width="108" height="64" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+         
+        '<circle cx="34" cy="30" r="9" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M12 58 Q26 48 40 58 Q54 68 68 58" fill="none" stroke="var(--sea-t1)" stroke-width="3" stroke-linecap="round"/>' +
+         
+        '<rect x="62" y="14" width="24" height="24" rx="3" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="88" y="14" width="22" height="24" rx="3" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="88" y="42" width="22" height="24" rx="3" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M99 50 L106 57 L99 64 L92 57 Z" fill="var(--sea-closed-mark)" stroke="var(--sea-ink)" stroke-width="2" stroke-linejoin="round"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      const T = api.teams;
+      const esc = api.esc;
+      let gone = false, locked = false;
+      const timers = [];
+      const wait = (ms, fn) => { const t = setTimeout(() => { if (!gone) fn(); }, ms); timers.push(t); return t; };
+
+      const seed = (api.rnd() * 1e9) | 0;
+
+      const LIST = S.forms.terms(api.qs, seed);
+      const R = (api.qs || []).map((it, n) => {
+        const t = String(it.a[it.c]);
+        const other = [];
+        for (let k = 1; other.length < 2 && k <= LIST.length; k++) {
+          const o = LIST[(n + k) % LIST.length];
+          if (o && o.t !== t && other.indexOf(o.t) < 0) other.push(o.t);
+        }
+         
+        for (let k = 0; other.length < 2 && k < it.a.length; k++) {
+          const o = String(it.a[k]);
+          if (o !== t && other.indexOf(o) < 0) other.push(o);
+        }
+        return { q: it.q, t: t, opts: S.games.shuffle([t].concat(other), seed + n) };
+      });
+
+      const th = api.theme;
+      const wide = (typeof matchMedia === 'function') && matchMedia('(min-width: 700px)').matches;
+      let pic = null, fit = 'cover';
+      if (th) {
+        if (wide && th.background) pic = th.background('classroom');
+        if (!pic && th.figure) { pic = th.figure('student', 'happy', { size: wide ? 'lg' : 'sm' }); fit = 'contain'; }
+      }
+
+      const ORDER = S.games.shuffle(Array.from({ length: TILES }, (_, k) => k), seed + 97);
+      const open = [];       
+      const shown = [];      
+      let i = 0;             
+      let phase = 'bet';     
+      let turns = 0;
+       
+      const MAX = R.length * 2 + T.length;
+
+      const behind = k => {
+        const top = Math.max.apply(null, T.map(x => x.score || 0).concat([0]));
+        return (top - (T[k].score || 0)) >= GAP;
+      };
+      const guessPts = k => (behind(k) ? WIN_BACK : WIN);
+
+      function tilesHtml() {
+        let s = '<div class="rv-box"><div class="rv-pic" id="rvPic">';
+        if (!pic) s += '<span class="rv-say">ارفع صورتك أمام الشاشة</span>';
+        for (let k = 0; k < TILES; k++) {
+          const alt = (((k % COLS) + Math.floor(k / COLS)) % 2) ? ' data-alt="1"' : '';
+          s += '<span class="rv-t" data-k="' + k + '"' + alt +
+            (open.indexOf(k) >= 0 ? ' data-off="1"' : '') + '>' +
+            '<svg viewBox="0 0 20 20" aria-hidden="true">' +
+            '<path d="M10 2.5 L17.5 10 L10 17.5 L2.5 10 Z" fill="var(--sea-closed-mark)" ' +
+            'stroke="var(--sea-ink)" stroke-width="2" stroke-linejoin="round"/></svg></span>';
+        }
+        return s + '</div></div>';
+      }
+
+      function paint() {
+        const box = el.querySelector('#rvPic');
+        if (!box || !pic) return;
+        box.style.backgroundImage = 'url("' + pic + '")';
+        box.style.backgroundSize = fit;
+      }
+
+      const hintHtml = () => (shown.length
+        ? '<p class="rv-hint">كُشف: ' + esc(shown.slice(-HINTS).join('، ')) + '</p>' : '');
+
+      function draw() {
+        if (i >= R.length || open.length >= TILES || turns >= MAX) return over();
+        api.step(i, R.length);
+        locked = false;
+        const k = api.turn();
+        const pts = guessPts(k);
+        let body = '';
+        if (phase === 'bet') {
+          body =
+            '<p class="gw-head">دور فريق ' + esc(T[k].name) + ' — ماذا يختار؟</p>' +
+            '<div class="gw-opts">' +
+              '<button class="gw-opt" type="button" data-b="ask">' +
+                '<span class="k">١</span>أجب — قطعة ونقطة</button>' +
+              '<button class="gw-opt" type="button" data-b="guess">' +
+                '<span class="k">٢</span>خمّن الصورة — ' + api.AR(pts) + PTS(pts) + '</button>' +
+            '</div>';
+        } else if (phase === 'ask') {
+          const r = R[i];
+          body =
+            '<h2 class="gw-q">' + esc(r.q) + '</h2>' +
+            '<div class="gw-opts">' + r.opts.map((o, n) =>
+              '<button class="gw-opt" type="button" data-o="' + n + '">' +
+                '<span class="k">' + KEY[n] + '</span>' + esc(o) + '</button>').join('') +
+            '</div>';
+        } else {
+          body =
+            '<p class="gw-head">قل ما في الصورة بصوت واضح</p>' +
+            '<div class="rv-mine gw-mine">' +
+              '<button class="rv-b" type="button" data-g="1">صحيح</button>' +
+              '<button class="rv-b" type="button" data-g="0">لا</button>' +
+            '</div>';
+        }
+        el.innerHTML =
+          '<div class="rv">' + tilesHtml() +
+            '<div class="rv-side">' +
+               
+              (phase === 'bet' && pts > WIN
+                ? '<p class="gw-tag">تخمين المتأخّر بخمس نقاط لا أربع</p>' : '') +
+              hintHtml() + body +
+            '</div>' +
+          '</div>';
+        paint();
+        el.querySelectorAll('[data-b]').forEach(b => { b.onclick = () => bet(b.dataset.b); });
+        el.querySelectorAll('[data-o]').forEach(b => { b.onclick = () => answer(+b.dataset.o); });
+        el.querySelectorAll('[data-g]').forEach(b => { b.onclick = () => guess(b.dataset.g === '1'); });
+      }
+
+      function bet(which) {
+        if (locked) return;
+        api.sfx('pop');
+        phase = (which === 'guess') ? 'guess' : 'ask';
+        draw();
+      }
+
+      function pass() {
+        turns++;
+        api.nextTurn();
+        phase = 'bet';
+        draw();
+      }
+
+      function answer(n) {
+        if (locked) return;
+        locked = true;
+        const r = R[i], k = api.turn(), ok = (r.opts[n] === r.t);
+        el.querySelectorAll('[data-o]').forEach(b => {
+          b.disabled = true;
+          const v = +b.dataset.o;
+          if (r.opts[v] === r.t) b.dataset.st = 'ok';
+          else if (v === n) b.dataset.st = 'no';
+        });
+        if (ok) {
+          api.score(k, 1);
+          const t = ORDER[open.length];
+          open.push(t);
+           
+          if (shown.indexOf(r.t) < 0) shown.push(r.t);
+          const tile = el.querySelector('[data-k="' + t + '"]');
+          if (tile) tile.dataset.off = '1';      
+        }
+         
+        api.judge(ok, { text: ok ? 'انكشفت قطعة' : 'الصحيح: ' + r.t });
+        i++;
+        wait(1700, () => {
+          if (i >= R.length || open.length >= TILES) return over();
+          pass();
+        });
+      }
+
+      function guess(ok) {
+        if (locked) return;
+        locked = true;
+        const k = api.turn(), pts = guessPts(k);
+        el.querySelectorAll('[data-g]').forEach(b => { b.disabled = true; });
+        if (ok) api.score(k, pts);
+        api.judge(ok, {
+          text: ok ? ('أحسنتم — ' + api.AR(pts) + PTS(pts) + ' لفريق ' + T[k].name)
+                   : 'ليست هي — يمضي الدور بلا خصم',
+        });
+         
+        wait(1700, () => { if (ok) return over(); pass(); });
+      }
+
+      function over() {
+        locked = true;
+        api.step(R.length, R.length);
+        api.finish();
+      }
+
+      api.setTurn(0);
+      draw();
+      return { destroy() { gone = true; locked = true; timers.forEach(clearTimeout); timers.length = 0; } };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
   S.games.define({
     kind: 'سرعة',
      
@@ -2524,7 +4579,7 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
     const many = groups.length > 1;
     return top('الصق أسئلتك… واختر لعبة!',
       'في دقيقة تصير مسابقة فِرَق على شاشة الفصل، من موبايلك.') + `
-      <div class="sea-body">
+      <div class="sea-body" data-v="home">
         ${mine.length ? `
         <section class="sea-sec">
           <h2 class="sea-h2">مسابقاتي</h2>
@@ -2585,7 +4640,7 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
     return top(S.demo ? 'أسئلة تجريبية' : 'أسئلتك',
       pend ? 'المس الإجابة الصحيحة في كل سؤال — ' + AR(pend) + ' ' + word(pend, 'ينتظر', 'ينتظران', 'تنتظر') + '.'
            : 'كل الإجابات محدّدة.') + `
-      <div class="sea-body">
+      <div class="sea-body" data-v="preview">
         ${S.demo ? '<p class="sea-tag">أسئلة تجريبية — ليست محتوى منهج مُراجَعاً.</p>' : ''}
         ${S.problems.length ? `
         <section class="sea-sec sea-warn">
@@ -2627,7 +4682,8 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
         <span class="sea-game-txt">
           <b>${esc(g.name)}</b>
           <span class="sea-game-line">${esc(g.line)}</span>
-          <span class="sea-game-meta"><b class="sea-kind">${esc(g.kind)}</b>${mins} دقيقة · ${tm} ${word(g.teams.max, 'فريق', 'فريقان', 'فِرَق')}</span>
+          
+          <span class="sea-game-meta"><b class="sea-kind">${esc(g.kind)}</b>${mins} دقيقة<i class="sea-dot"></i>${tm} ${word(g.teams.max, 'فريق', 'فريقان', 'فِرَق')}</span>
           <span class="sea-fit">${esc(r.ok ? GM.fitLine(items, g.id) : r.why)}</span>
         </span>
       </button>`;
@@ -2635,7 +4691,7 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
     return top('اختر اللعبة',
       AR(items.length) + ' ' + word(items.length, 'سؤال جاهز', 'سؤالان جاهزان', 'أسئلة جاهزة') +
       ' — والأسئلة نفسها تعمل في كل لعبة.') + `
-      <div class="sea-body">
+      <div class="sea-body" data-v="pick">
         <section class="sea-sec">
           <p class="sea-label">كم فريقاً في الصفّ؟</p>
           <div class="sea-chips">${[2, 3, 4].map(k =>

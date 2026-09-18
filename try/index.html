@@ -187,6 +187,20 @@
   border:2px solid var(--sea-ink); border-radius:999px;
   padding:3px 9px; margin-inline-end:7px; vertical-align:middle; }
 
+@media (max-height:460px) and (min-width:660px){
+  
+  .sea-body[data-v="home"]{ display:grid; grid-template-columns:1fr 1fr; align-items:start;
+    column-gap:16px; row-gap:8px; max-width:none; }
+  .sea-body[data-v="home"] > .sea-sec{ min-width:0; }
+  .sea-body[data-v="home"] > .sea-figure{ display:none; }
+  .sea-body[data-v="home"] > .sea-foot{ grid-column:1 / -1; margin-block-start:0; }
+  
+  .sea-body[data-v="home"] > .sea-sec:first-child .sea-cards{ max-height:16em; overflow-y:auto; }
+}
+
+.sea-dot{ display:inline-block; width:4px; height:4px; border-radius:50%;
+  background:var(--sea-sub); margin-inline:8px; vertical-align:middle; }
+
 </style>
 </head>
 <body>
