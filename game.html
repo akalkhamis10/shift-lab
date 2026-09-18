@@ -187,6 +187,11 @@
 .sea-game-line{ font-size:14px; color:var(--sea-sub); line-height:1.45; }
 .sea-game-meta{ font-size:13px; font-weight:600; color:var(--sea-ink); }
 
+.sea-kind{ display:inline-block; font-family:var(--sea-display); font-weight:800;
+  font-size:12px; line-height:1; color:var(--sea-ink); background:var(--sea-sun);
+  border:2px solid var(--sea-ink); border-radius:999px;
+  padding:3px 9px; margin-inline-end:7px; vertical-align:middle; }
+
 </style>
 <style>
 .gp{
@@ -346,6 +351,8 @@
 
 .gw-head{ margin: 0; font-family: var(--sea-display); font-weight: 800;
   font-size: clamp(16px, 1.2em, 36px); line-height: 1.3; text-align: center; }
+
+.gw-mine{ opacity:.9; }
 
 .gw-sub{ margin: 0; font-size: .8em; color: var(--sea-sub); text-align: center; line-height: 1.5; }
 
@@ -653,7 +660,16 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
   const REG = [];
   const BY = {};
 
-  const MUST = ['id', 'name', 'line', 'comeback'];
+  const MUST = ['id', 'name', 'line', 'comeback', 'kind', 'keys'];
+
+  const KEY_SETS = {
+    verb:     ['اختيار', 'سحب وفرز', 'توقيت ضغطة', 'رسم', 'حركة جسد', 'رهان'],
+    relation: ['فرق ضد فرق', 'الفصل ضد الوقت', 'الفصل ضد المعلّم'],
+    second:   ['اقتصاد', 'بناء', 'أرض', 'مطاردة', 'كشف', 'حظّ', 'لا شيء'],
+    form:     ['سؤال بخيارات', 'أزواج', 'بطاقة حكم', 'قائمة مصطلحات'],
+  };
+   
+  const KINDS = ['تخطيط', 'سرعة', 'حركة', 'رسم', 'تعاون', 'حظّ'];
 
   const Games = {
      
@@ -666,6 +682,13 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
         return false;
       }
       if (BY[spec.id]) { console.warn('SHIFT: لعبة مكرّرة — ' + spec.id); return false; }
+       
+      const badKey = Object.keys(KEY_SETS).filter(k => KEY_SETS[k].indexOf((spec.keys || {})[k]) < 0);
+      if (badKey.length || KINDS.indexOf(spec.kind) < 0) {
+        console.warn('SHIFT: لعبة مرفوضة — ' + spec.id + ': مفتاحٌ خارج القائمة (' +
+          badKey.concat(KINDS.indexOf(spec.kind) < 0 ? ['kind'] : []).join('، ') + ')');
+        return false;
+      }
       const g = Object.assign({
         mins: [8, 15],
         teams: { min: 2, max: 4 },
@@ -679,6 +702,18 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
     },
 
     all: () => REG.slice(),
+    KEY_SETS: KEY_SETS,
+    KINDS: KINDS,
+
+    clash() {
+      const out = [];
+      for (let i = 0; i < REG.length; i++) for (let j = i + 1; j < REG.length; j++) {
+        const a = REG[i], b = REG[j];
+        const same = Object.keys(KEY_SETS).filter(k => a.keys[k] === b.keys[k]);
+        if (same.length > 2) out.push({ a: a.id, b: b.id, same: same, on: same.map(k => a.keys[k]) });
+      }
+      return out;
+    },
     get: id => BY[id] || null,
 
     fits(item, id) {
@@ -744,6 +779,59 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
 
   S.games = Games;
   if (typeof module !== 'undefined' && module.exports) module.exports = Games;
+})();
+
+</script>
+<script>
+(function () {
+  const G = (typeof window !== 'undefined' ? window : globalThis);
+  const S = G.SHIFT = G.SHIFT || {};
+
+  const good = it => !!it && !!it.q && Array.isArray(it.a) && it.c >= 0 && it.c < it.a.length;
+  const shuffle = (arr, seed) => (S.games ? S.games.shuffle(arr, seed) : (arr || []).slice());
+
+  const F = {
+     
+    pairs(items, seed, max) {
+      const out = shuffle((items || []).filter(good), seed)
+        .map(it => ({ q: it.q, a: it.a[it.c] }));
+      return max ? out.slice(0, max) : out;
+    },
+
+    judge(items, seed, max) {
+      const src = shuffle((items || []).filter(good), seed);
+      const out = [];
+      src.forEach((it, n) => {
+        const wrongs = it.a.filter((_, k) => k !== it.c);
+         
+        const asTrue = (n % 2 === 0) || !wrongs.length;
+        const shown = asTrue ? it.a[it.c] : wrongs[n % wrongs.length];
+        out.push({ q: it.q, shown: shown, ok: asTrue, right: it.a[it.c] });
+      });
+      return max ? out.slice(0, max) : out;
+    },
+
+    terms(items, seed, max, maxLen) {
+      const lim = maxLen || 28;
+      const seen = Object.create(null), out = [];
+      shuffle((items || []).filter(good), seed).forEach(it => {
+        const t = String(it.a[it.c] || '').trim();
+        if (!t || t.length > lim || seen[t]) return;
+        seen[t] = 1; out.push({ t: t, q: it.q });
+      });
+      return max ? out.slice(0, max) : out;
+    },
+
+    count(items, form, seed) {
+      if (form === 'أزواج') return F.pairs(items, seed).length;
+      if (form === 'بطاقة حكم') return F.judge(items, seed).length;
+      if (form === 'قائمة مصطلحات') return F.terms(items, seed).length;
+      return (items || []).filter(good).length;
+    },
+  };
+
+  S.forms = F;
+  if (typeof module !== 'undefined' && module.exports) module.exports = F;
 })();
 
 </script>
@@ -1030,6 +1118,9 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
   }
 
   S.games.define({
+    kind: 'تخطيط',
+     
+    keys: { verb: 'اختيار', relation: 'فرق ضد فرق', second: 'اقتصاد', form: 'سؤال بخيارات' },
     id: 'board',
     name: 'لوحة المسابقة',
     line: 'فئات ونقاط على لوحة، والفريق يختار مربّعه ويخاطر.',
@@ -1235,7 +1326,7 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
       '.oy:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--sea-ink); }',
       '.oy[disabled]{ cursor:default; }',
       '.oy svg{ width:100%; height:auto; display:block; }',
-      '.oy b{ font-family:var(--sea-display); font-weight:800; font-size:.72em;',
+      '.oy b{ font-family:var(--sea-display); font-weight:800; font-size:clamp(14px,1.15em,34px);',
       '  line-height:1.2; text-align:center; white-space:nowrap; }',
       '.oy[data-st="pick"]{ background:var(--sea-sun); }',
       '.oy[data-st="miss"]{ opacity:.55; box-shadow:none; }',
@@ -1243,13 +1334,16 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
       '@media (max-height:460px){',
       '  .oy{ max-width:min(11em,22vh); min-height:44px; padding:.25em; gap:.1em; }',
       '  .oy svg{ max-height:16vh; }',
-      '  .oy b{ font-size:.66em; }',
+      '  .oy b{ font-size:clamp(13px,.95em,26px); }',
       '}',
     ].join('\n');
     document.head.appendChild(s);
   }
 
   S.games.define({
+    kind: 'حظّ',
+     
+    keys: { verb: 'رهان', relation: 'فرق ضد فرق', second: 'حظّ', form: 'سؤال بخيارات' },
     id: 'oyster',
     name: 'المحار',
     line: 'أجب صحيحاً، ثم افتح محارة: دانة أو لؤلؤة أو تبديل مراكز.',
@@ -1303,10 +1397,30 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
         return { slots: slots, armed: armed, gap: r.gap };
       }
 
-      function ask() {
+      let bet = 'deep';
+      function wager() {
         const q = api.qs[i];
         if (!q) return api.finish();
         api.step(i, api.qs.length);
+        locked = false;
+        el.innerHTML =
+          '<p class="gw-head">دور ' + api.esc(api.teams[api.turn()].name) + ' — كم تخاطر؟</p>' +
+          '<div class="oy-row">' +
+            '<button class="oy" type="button" data-bet="near">' + closed() +
+              '<b>محارة قريبة</b></button>' +
+            '<button class="oy" type="button" data-bet="deep">' + closed() +
+              '<b>غوصة عميقة</b></button>' +
+          '</div>' +
+          '<p class="gw-sub">القريبة: نقطة على الصحيح. والعميقة: نقطتان ومحارة — ولا شيء على الخطأ.</p>';
+        el.querySelectorAll('[data-bet]').forEach(b => { b.onclick = () => {
+          if (locked) return; locked = true; bet = b.dataset.bet; api.sfx('pop'); ask();
+        }; });
+      }
+
+      function ask() {
+        const q = api.qs[i];
+        if (!q) return api.finish();
+        locked = false;
         el.innerHTML =
           '<h2 class="gw-q">' + api.esc(q.q) + '</h2>' +
           '<div class="gw-opts">' + q.a.map((t, k) =>
@@ -1325,10 +1439,11 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
           if (n === q.c) b.dataset.st = 'ok';
           else if (n === k) b.dataset.st = 'no';
         });
-        if (ok) api.score(api.turn(), 1);
-        api.judge(ok, { text: ok ? 'صحيح — لك محارة' : 'خطأ' });
+        const deep = bet === 'deep';
+        if (ok) api.score(api.turn(), deep ? 2 : 1);
+        api.judge(ok, { text: ok ? (deep ? 'صحيح — نقطتان ولك محارة' : 'صحيح — نقطة') : 'خطأ' });
          
-        wait(1300, () => { if (ok) board(); else step(); });
+        wait(1300, () => { if (ok && deep) board(); else step(); });
       }
 
       function board() {
@@ -1386,10 +1501,10 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
         i++;
         api.nextTurn();
         if (i >= api.qs.length) { api.step(api.qs.length, api.qs.length); return api.finish(); }
-        ask();
+        wager();
       }
 
-      ask();
+      wager();
       return {
         destroy() {
           gone = true; locked = true;
@@ -1481,6 +1596,9 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
   }
 
   S.games.define({
+    kind: 'سرعة',
+     
+    keys: { verb: 'اختيار', relation: 'فرق ضد فرق', second: 'أرض', form: 'سؤال بخيارات' },
     id: 'tug',
     name: 'شدّ الحبل',
     line: 'حبلٌ بين ناحيتين، وكل إجابة صحيحة تسحبه خطوة.',
@@ -1664,6 +1782,9 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
   }
 
   S.games.define({
+    kind: 'سرعة',
+     
+    keys: { verb: 'اختيار', relation: 'فرق ضد فرق', second: 'مطاردة', form: 'سؤال بخيارات' },
     id: 'race',
     name: 'السباق',
     line: 'كل فريق عدّاء على مساره، والإجابة الصحيحة تقدّمه خطوة.',
@@ -1916,6 +2037,9 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
   }
 
   S.games.define({
+    kind: 'حظّ',
+     
+    keys: { verb: 'اختيار', relation: 'فرق ضد فرق', second: 'كشف', form: 'سؤال بخيارات' },
     id: 'treasure',
     name: 'صيد الكنز',
     line: 'شبكة مخفية، والإجابة الصحيحة تعطي ضربة على مربّع.',
@@ -2123,6 +2247,9 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
   const KEY = ['أ', 'ب', 'ج', 'د'];
 
   S.games.define({
+    kind: 'تعاون',
+     
+    keys: { verb: 'اختيار', relation: 'الفصل ضد الوقت', second: 'بناء', form: 'سؤال بخيارات' },
     id: 'towers',
     name: 'الأبراج',
     line: 'الفصل كلّه يبني برجاً واحداً — كل إجابة صحيحة قطعة.',
@@ -2313,9 +2440,323 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
 <script>
 (function () {
   const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const BUILD = 3;         
+  const BONUS = 2;         
+
+  if (!document.getElementById('css-corners')) {
+    const st = document.createElement('style');
+    st.id = 'css-corners';
+    st.textContent =
+      '.cn{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;' +
+      'align-items:center;gap:.4em}' +
+       
+      '.cn-map{flex:0 1 auto;width:min(34em,100%);min-height:0;overflow:hidden;' +
+      'display:grid;grid-template-columns:repeat(var(--cn-n,2),1fr);gap:.4em}' +
+       
+      '.cn-c{display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      'gap:.15em;padding:.4em .5em;border:var(--sea-bd) solid var(--sea-ink);' +
+      'border-radius:var(--sea-r);background:var(--sea-white);color:var(--sea-ink);' +
+      'box-shadow:0 4px 0 var(--sea-ink);min-height:max(44px,3.4em)}' +
+      '.cn-c b{font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(15px,1.15em,34px);line-height:1.2;text-align:center}' +
+      '.cn-c i{font-style:normal;font-size:clamp(14px,1.15em,34px);color:var(--sea-sub);text-align:center}' +
+       
+      '.cn-f{display:flex;gap:.18em;flex-wrap:wrap;justify-content:center;min-height:.7em}' +
+      '.cn-f s{display:block;width:.55em;height:.55em;border-radius:50%;' +
+      'border:2px solid var(--sea-ink);text-decoration:none}' +
+      '.cn-c[data-own="1"]{background:var(--sea-sun)}' +
+       
+      '.cn-log{width:min(34em,100%);display:flex;flex-direction:column;gap:.3em}' +
+      '.cn-row{display:flex;align-items:center;gap:.3em;flex-wrap:wrap}' +
+      '.cn-row>b{font-family:var(--sea-display);font-weight:800;' +
+      'font-size:clamp(14px,.95em,28px);min-width:5.5em}' +
+      '.cn-b{font:inherit;font-size:clamp(13px,.85em,26px);font-weight:700;cursor:pointer;' +
+      'min-height:44px;padding:0 .7em;border:2px solid var(--sea-ink);border-radius:999px;' +
+      'background:var(--sea-white);color:var(--sea-ink)}' +
+      '.cn-b[data-on="1"]{background:var(--sea-sun);font-weight:800}' +
+      '.cn-b[data-st="ok"]{background:var(--sea-t3);color:var(--sea-white)}' +
+      '.cn-b[data-st="no"]{background:var(--sea-coral);color:var(--sea-white)}' +
+      '@media (max-height:460px){.cn-map{grid-template-columns:repeat(4,1fr)}}';
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    kind: 'حركة',
+     
+    keys: { verb: 'حركة جسد', relation: 'فرق ضد فرق', second: 'بناء', form: 'سؤال بخيارات' },
+    id: 'corners',
+    name: 'أركان الفصل',
+    line: 'كل ركن إجابة — الفريق يمشي إليه، وأنت تسجّل بلمسة.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+     
+    need: { min: 3, max: 4 },
+    minQ: 5,
+    comeback: 'المتأخّر بثلاث نقاط تصير وقفته الصحيحة بنقطتين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="8" width="108" height="64" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="14" y="16" width="38" height="22" rx="5" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="68" y="16" width="38" height="22" rx="5" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="14" y="44" width="38" height="22" rx="5" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="68" y="44" width="38" height="22" rx="5" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<circle cx="33" cy="27" r="4.5" fill="var(--sea-t1)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '<circle cx="87" cy="55" r="4.5" fill="var(--sea-t3)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      const T = api.teams, N = T.length;
+      const names = (api.theme && api.theme.corners) ? api.theme.corners(4) : ['الأول', 'الثاني', 'الثالث', 'الرابع'];
+      let i = 0, locked = false, gone = false;
+      const timers = [];
+      const wait = (ms, fn) => { const t = setTimeout(() => { if (!gone) fn(); }, ms); timers.push(t); return t; };
+       
+      const flags = [], owner = [];
+       
+      let stood = [];
+
+      function bonusFor(t) {
+        const top = Math.max.apply(null, T.map(x => x.score || 0).concat([0]));
+        return (top - (T[t].score || 0)) >= 3 ? 2 : 1;
+      }
+      const anyBonus = () => T.some((_, t) => bonusFor(t) > 1);
+
+      function cornerCount() { return Math.min(names.length, (api.qs[i] || { a: [] }).a.length); }
+
+      function mapHtml(reveal) {
+        const q = api.qs[i] || { a: [] };
+        const n = cornerCount();
+         
+        let s = '<div class="cn-map" style="--cn-n:' + (n === 4 ? 2 : n) + '">';
+        for (let c = 0; c < n; c++) {
+          const own = owner[c];
+          const st = reveal && c === q.c ? ' data-st="ok"' : '';
+          s += '<div class="cn-c"' + (own != null ? ' data-own="1"' : '') + st + '>' +
+            '<b>' + api.esc(names[c]) + '</b>' +
+             
+            '<i>' + api.esc(q.a[c] || '') + '</i>' +
+            '<span class="cn-f">' + T.map((t, k) => {
+              const nf = (flags[c] && flags[c][k]) || 0;
+              let out = '';
+              for (let z = 0; z < nf; z++) out += '<s style="background:' + t.color + '"></s>';
+              return out;
+            }).join('') + '</span>' +
+            (own != null ? '<i>ركن ' + api.esc(T[own].name) + '</i>' : '') +
+            '</div>';
+        }
+        return s + '</div>';
+      }
+
+      function draw() {
+        const q = api.qs[i];
+        if (!q) return api.finish();
+        api.step(i, api.qs.length);
+        stood = T.map(() => -1);
+        locked = false;
+        el.innerHTML =
+          (anyBonus() ? '<p class="gw-tag">ركن مضاعف للمتأخّر — وقفته الصحيحة بنقطتين</p>' : '') +
+          '<h2 class="gw-q">' + api.esc(q.q) + '</h2>' +
+          mapHtml(false) +
+          '<div class="cn-log gw-mine">' + T.map((t, k) =>
+            '<div class="cn-row"><b style="color:' + t.color + '">' + api.esc(t.name) + '</b>' +
+            names.slice(0, cornerCount()).map((nm, c) =>
+              '<button class="cn-b" type="button" data-t="' + k + '" data-c="' + c + '">' + api.esc(nm) + '</button>').join('') +
+            '</div>').join('') + '</div>' +
+          '<p class="gw-sub">نادِ الأركان بأسمائها، ثم سجّل أين وقف كل فريق.</p>';
+        el.querySelectorAll('[data-t]').forEach(b => { b.onclick = () => log(+b.dataset.t, +b.dataset.c); });
+      }
+
+      function log(t, c) {
+        if (locked) return;
+        stood[t] = c;
+        el.querySelectorAll('[data-t="' + t + '"]').forEach(b => {
+          if (+b.dataset.c === c) b.dataset.on = '1'; else b.removeAttribute('data-on');
+        });
+        api.sfx('pop');
+        if (stood.every(x => x >= 0)) wait(300, reveal);
+      }
+
+      function reveal() {
+        if (locked) return;
+        locked = true;
+        const q = api.qs[i];
+        let any = false;
+        const built = [];
+        T.forEach((t, k) => {
+          const ok = stood[k] === q.c;
+          if (!ok) return;
+          any = true;
+          api.score(k, bonusFor(k));
+          flags[q.c] = flags[q.c] || [];
+          flags[q.c][k] = (flags[q.c][k] || 0) + 1;
+           
+          if (owner[q.c] == null && flags[q.c][k] >= BUILD) { owner[q.c] = k; api.score(k, BONUS); built.push(t.name); }
+        });
+        el.querySelectorAll('[data-t]').forEach(b => {
+          const t = +b.dataset.t, c = +b.dataset.c;
+          b.disabled = true;
+          if (stood[t] !== c) return;
+          b.dataset.st = (c === q.c) ? 'ok' : 'no';
+        });
+        const map = el.querySelector('.cn-map');
+        if (map) map.outerHTML = mapHtml(true);
+        api.judge(any, {
+          text: built.length ? 'بُني ركن ' + built[0] : (any ? 'الركن الصحيح: ' + names[q.c] : 'لا فريق في الركن الصحيح'),
+        });
+        wait(1900, () => {
+          i++;
+          if (i >= api.qs.length) { api.step(api.qs.length, api.qs.length); return api.finish(); }
+          draw();
+        });
+      }
+
+      draw();
+      return { destroy() { gone = true; locked = true; timers.forEach(clearTimeout); timers.length = 0; } };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+
+  if (!document.getElementById('css-duel')) {
+    const st = document.createElement('style');
+    st.id = 'css-duel';
+    st.textContent =
+      '.dl{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:.45em}' +
+       
+      '.dl-card{width:min(30em,100%);display:flex;flex-direction:column;gap:.3em;' +
+      'align-items:center;padding:.5em .7em;border:var(--sea-bd) solid var(--sea-ink);' +
+      'border-radius:var(--sea-r);background:var(--sea-white);box-shadow:0 5px 0 var(--sea-ink)}' +
+      '.dl-q{margin:0;font-family:var(--sea-display);font-weight:800;text-align:center;' +
+      'font-size:clamp(17px,1.35em,40px);line-height:1.3;overflow-wrap:anywhere}' +
+      '.dl-a{margin:0;font-family:var(--sea-display);font-weight:800;text-align:center;' +
+      'font-size:clamp(18px,1.6em,48px);line-height:1.25;color:var(--sea-coral);' +
+      'overflow-wrap:anywhere}' +
+      '.dl-acts{display:flex;gap:.5em;width:min(30em,100%)}' +
+      '.dl-acts .gw-opt{justify-content:center;text-align:center}' +
+       
+      '.dl-who{flex:0 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center}' +
+      '.dl-who img{display:block;height:clamp(80px,26vh,280px);width:auto;' +
+      'filter:drop-shadow(4px 4px 0 var(--sea-ink));' +
+      'transition:transform .28s cubic-bezier(.2,.9,.3,1)}' +
+      '.dl[data-r="win"] .dl-who img{transform:translateY(-8%) rotate(-4deg)}' +
+      '.dl[data-r="lose"] .dl-who img{transform:translateY(4%) rotate(3deg)}' +
+      '@media (prefers-reduced-motion:reduce){.dl-who img{transition:none}}';
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    kind: 'تعاون',
+     
+    keys: { verb: 'اختيار', relation: 'الفصل ضد المعلّم', second: 'لا شيء', form: 'بطاقة حكم' },
+    id: 'duel',
+    name: 'الفصل ضد المعلّم',
+    line: 'بطاقة وإجابة — والصفّ يحكم: صح أم خطأ. وكل خطأ نقطة للمعلّم.',
+    mins: [8, 12],
+     
+    teams: { min: 2, max: 2 },
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'حين يتقدّم المعلّم بثلاث نقاط تصير البطاقة التالية بنقطتين للفصل',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="10" width="108" height="58" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="14" y="20" width="44" height="38" rx="6" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<circle cx="36" cy="33" r="5" fill="var(--sea-sand)"/>' +
+        '<rect x="28" y="41" width="16" height="11" rx="4" fill="var(--sea-sand)"/>' +
+        '<rect x="64" y="20" width="42" height="17" rx="5" fill="var(--sea-t3)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="64" y="41" width="42" height="17" rx="5" fill="var(--sea-coral)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+       
+      const CLASS = 0, TEACH = 1;
+      api.teams[CLASS].name = 'الفصل';
+      api.teams[CLASS].color = 'var(--sea-t1)';
+      api.teams[TEACH].name = 'المعلّم';
+      api.teams[TEACH].color = 'var(--sea-coral)';
+      api.setTurn(CLASS);
+
+      const cards = S.forms.judge(api.qs, api.rnd() * 1e9 | 0);
+      const fig = (api.theme && api.theme.figure) ? api.theme.figure('teacher', 'main', { size: 'lg' }) : null;
+      let i = 0, locked = false, gone = false;
+      const timers = [];
+      const wait = (ms, fn) => { const t = setTimeout(() => { if (!gone) fn(); }, ms); timers.push(t); return t; };
+
+      const boost = () => ((api.teams[TEACH].score || 0) - (api.teams[CLASS].score || 0)) >= 3 ? 2 : 1;
+
+      function draw() {
+        const c = cards[i];
+        if (!c) return api.finish();
+        api.step(i, cards.length);
+        locked = false;
+        const pts = boost();
+        el.innerHTML =
+          '<div class="dl">' +
+            (pts > 1 ? '<p class="gw-tag">بطاقة الفصل — بنقطتين</p>' : '') +
+            '<div class="dl-card">' +
+              '<p class="dl-q">' + api.esc(c.q) + '</p>' +
+              '<p class="dl-a">' + api.esc(c.shown) + '</p>' +
+            '</div>' +
+            '<div class="dl-acts">' +
+              '<button class="gw-opt" type="button" data-v="1">صح</button>' +
+              '<button class="gw-opt" type="button" data-v="0">خطأ</button>' +
+            '</div>' +
+             
+          (fig ? '<div class="dl-who"><img alt="" src=' + JSON.stringify(fig) + '></div>' : '') +
+          '</div>';
+        el.querySelectorAll('[data-v]').forEach(b => { b.onclick = () => judge(b.dataset.v === '1'); });
+      }
+
+      function judge(said) {
+        if (locked) return;
+        locked = true;
+        const c = cards[i], ok = (said === c.ok), pts = boost();
+        el.querySelectorAll('[data-v]').forEach(b => {
+          b.disabled = true;
+          const v = b.dataset.v === '1';
+          if (v === c.ok) b.dataset.st = 'ok';
+          else if (v === said) b.dataset.st = 'no';
+        });
+        if (ok) api.score(CLASS, pts); else api.score(TEACH, 1);
+         
+        const wrap = el.querySelector('.dl');
+        if (wrap) wrap.dataset.r = ok ? 'lose' : 'win';
+        api.judge(ok, {
+          text: ok ? (pts > 1 ? 'أحسنتم — نقطتان للفصل' : 'أحسنتم — نقطة للفصل')
+                   : 'الصحيح: ' + c.right + ' — نقطة للمعلّم',
+        });
+        wait(1800, () => {
+          i++;
+          if (i >= cards.length) { api.step(cards.length, cards.length); return api.finish(); }
+          draw();
+        });
+      }
+
+      draw();
+      return { destroy() { gone = true; locked = true; timers.forEach(clearTimeout); timers.length = 0; } };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
   const KEY = ['أ', 'ب', 'ج', 'د'];
 
   S.games.define({
+    kind: 'سرعة',
+     
+    keys: { verb: 'اختيار', relation: 'فرق ضد فرق', second: 'لا شيء', form: 'سؤال بخيارات' },
     id: 'quiz',
     name: 'سباق المعرفة',
     line: 'سؤال على الشاشة، والفريق صاحب الدور يلمس إجابته.',
