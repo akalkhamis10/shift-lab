@@ -15,10 +15,16 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   /* **التطابق يتجاهل معاملات الرابط**: رابطٌ يصل بـ?v=2 أو ?utm=… من واتساب كان
-     يخطئ المخزَّن فيسقط بلا شبكة، والمُرجَع حينها undefined لا صفحة. */
+     يخطئ المخزَّن فيسقط بلا شبكة، والمُرجَع حينها undefined لا صفحة.
+     **والتخزين يتجاهلها كذلك** — وهذا نصف القاعدة الذي سقط سهواً: الحفظ تحت العنوان
+     كاملاً بمعاملاته ينشئ مدخلاً جديداً كل مرة **ولا يحدّث القديم أبداً**، فيبقى
+     المخزَّن الأول يُخدَم وتُحجب النسخة المنشورة (قِيس على وجهة التجربة: ملفٌّ جديد
+     على الخادم وثلاث إعادات تحميل تعرض القديم). فالمفتاح واحد بلا معاملات. */
+  const key = (() => { try { const u = new URL(e.request.url); u.search = ''; return u.toString(); }
+                       catch (x) { return e.request; } })();
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => {
     const net = fetch(e.request).then(res => {
-      if (res && res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+      if (res && res.ok) caches.open(CACHE).then(c => c.put(key, res.clone()));
       return res;
     }).catch(() => hit);            /* بلا شبكة: النسخة المخزّنة هي الجواب */
     return hit || net;              /* المخزّن أولاً، والتحديث في الخلفية */
