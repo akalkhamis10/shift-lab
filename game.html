@@ -1,0 +1,2454 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0c7274">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="مسابقة الفصل">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>SHIFT — اللعبة</title>
+
+<style>
+:root{
+  --sea-sand:#fbf3e4;        
+  --sea-teal:#0f8b8d;        
+  
+  --sea-head:#0c7274;        
+  --sea-ink:#0b3c49;         
+  --sea-coral:#c8432f;       
+  --sea-sun:#f2b134;         
+  --sea-closed:#0c7274;      
+  --sea-closed-mark:#6fc3c4; 
+  --sea-sub:#3d5a63;         
+  --sea-faint:#e6f4f4;       
+  --sea-white:#ffffff;
+  --sea-t1:#4e9fc7;          
+  --sea-t2:#c8432f;          
+  --sea-t3:#2f8f5b;          
+  --sea-t4:#7a5ea8;          
+
+  --sea-r-sm:16px; --sea-r:20px; --sea-r-lg:26px;
+  --sea-bd:3px;                        
+  --sea-shadow:4px 4px 0 var(--sea-ink);        
+  --sea-shadow-board:0 8px 0 var(--sea-ink);    
+  --sea-display:'Baloo Sea','Baloo Bhaijaan 2',system-ui,sans-serif;
+  --sea-text:'Readex Sea','Readex Pro',system-ui,sans-serif;
+}
+
+.sea{ min-height:100dvh; background:var(--sea-sand); color:var(--sea-ink);
+  font-family:var(--sea-text); font-weight:400; display:flex; flex-direction:column; }
+.sea *{ box-sizing:border-box; }
+
+.sea-top{ background:var(--sea-head); color:var(--sea-white);
+  padding:max(14px, env(safe-area-inset-top)) 18px 6px;
+  display:flex; flex-direction:column; gap:6px; }
+.sea-brand{ font-family:var(--sea-text); font-weight:600; font-size:14px;
+  color:var(--sea-faint); letter-spacing:.02em; }
+.sea-wave svg path{ fill:var(--sea-sand); }
+.sea-top h1{ font-family:var(--sea-display); font-weight:800; margin:0;
+  font-size:clamp(26px,6.2vw,40px); line-height:1.15; }
+.sea-lede{ margin:0 0 4px; font-size:15px; font-weight:400; color:var(--sea-faint); line-height:1.55; }
+
+.sea-wave{ display:block; width:100%; height:22px; background:var(--sea-head); }
+.sea-wave svg{ display:block; width:100%; height:22px; }
+
+.sea-body{ flex:1; display:flex; flex-direction:column; gap:16px;
+  padding:16px 18px max(18px, env(safe-area-inset-bottom)); max-width:46em; width:100%; margin-inline:auto; }
+.sea-sec{ display:flex; flex-direction:column; gap:10px; }
+.sea-h2{ font-family:var(--sea-display); font-weight:800; font-size:19px; margin:0; color:var(--sea-ink); }
+
+.sea-field{ width:100%; font:inherit; font-size:17px; line-height:1.7; color:var(--sea-ink);
+  background:var(--sea-white); border:var(--sea-bd) solid var(--sea-ink);
+  border-radius:var(--sea-r); box-shadow:var(--sea-shadow);
+  padding:13px 15px; min-height:9em; resize:vertical; }
+.sea-field::placeholder{ color:var(--sea-sub); opacity:.75; }
+.sea-input{ min-height:52px; resize:none; }
+.sea-hint{ margin:0; font-size:14px; font-weight:400; color:var(--sea-sub); line-height:1.5; }
+.sea-label{ margin:0; font-size:14px; font-weight:600; color:var(--sea-sub); }
+
+.sea-btn{ font:inherit; font-family:var(--sea-display); font-weight:800; font-size:19px;
+  min-height:56px; padding:0 22px; border-radius:var(--sea-r);
+  border:var(--sea-bd) solid var(--sea-ink); box-shadow:var(--sea-shadow);
+  cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  transition:transform .08s ease, box-shadow .08s ease; }
+.sea-btn:active{ transform:translate(3px,3px); box-shadow:1px 1px 0 var(--sea-ink); }
+.sea-btn-main{ background:var(--sea-coral); color:var(--sea-white); }
+.sea-btn-plain{ background:var(--sea-white); color:var(--sea-ink); }
+.sea-btn[disabled]{ opacity:.45; cursor:default; box-shadow:none; transform:none; }
+.sea-acts{ display:flex; flex-direction:column; gap:10px; }
+
+.sea-link{ font-size:16px; font-weight:600; color:var(--sea-ink);
+  min-height:44px; display:inline-flex; align-items:center; gap:7px; text-decoration:underline;
+  text-underline-offset:4px; }
+.sea-foot{ margin-block-start:auto; padding-block-start:10px;
+  border-block-start:2px solid rgba(11,60,73,.18); }    
+
+.sea-cards{ display:flex; flex-direction:column; gap:10px; }
+.sea-card{ font:inherit; text-align:start; display:flex; flex-direction:column; gap:3px;
+  background:var(--sea-white); color:var(--sea-ink);
+  border:var(--sea-bd) solid var(--sea-ink); border-radius:var(--sea-r);
+  box-shadow:var(--sea-shadow); padding:13px 15px; min-height:56px; cursor:pointer;
+  transition:transform .08s ease, box-shadow .08s ease; }
+.sea-card:active{ transform:translate(3px,3px); box-shadow:1px 1px 0 var(--sea-ink); }
+.sea-card b{ font-family:var(--sea-display); font-weight:800; font-size:19px; }
+.sea-card span{ font-size:14px; color:var(--sea-sub); line-height:1.5; }
+.sea-card[disabled]{ opacity:.45; cursor:default; box-shadow:none; }
+.sea-fit{ color:var(--sea-teal) !important; font-weight:600; }
+.sea-n{ font-family:var(--sea-display); font-weight:800; color:var(--sea-coral); }
+
+.sea-qs{ display:flex; flex-direction:column; gap:12px; }
+.sea-q{ background:var(--sea-white); border:var(--sea-bd) solid var(--sea-ink);
+  border-radius:var(--sea-r); box-shadow:var(--sea-shadow); padding:13px 14px;
+  display:flex; flex-direction:column; gap:9px; }
+.sea-q[data-pending="1"]{ border-color:var(--sea-sun); box-shadow:4px 4px 0 var(--sea-sun); }
+.sea-q-t{ font-family:var(--sea-display); font-weight:800; font-size:17px; line-height:1.45; }
+.sea-opts{ display:flex; flex-direction:column; gap:7px; }
+.sea-opt{ font:inherit; font-size:16px; display:flex; align-items:center; gap:10px; text-align:start;
+  min-height:48px; padding:8px 11px; border:2px solid var(--sea-ink); border-radius:var(--sea-r-sm);
+  background:var(--sea-sand); color:var(--sea-ink); cursor:pointer; }
+.sea-opt .k{ flex:none; width:28px; height:28px; border-radius:50%; background:var(--sea-white);
+  border:2px solid var(--sea-ink); display:grid; place-items:center;
+  font-family:var(--sea-display); font-weight:800; font-size:13px; }
+.sea-opt .t{ min-width:0; overflow-wrap:anywhere; }
+.sea-opt[data-on="1"]{ background:var(--sea-sun); border-color:var(--sea-ink); font-weight:600; }
+.sea-opt[data-on="1"] .k{ background:var(--sea-ink); color:var(--sea-sun); }
+
+.sea-note{ margin:0; font-size:15px; line-height:1.55; color:var(--sea-ink);
+  background:var(--sea-white); border:2px solid var(--sea-ink);
+  border-radius:var(--sea-r-sm); box-shadow:var(--sea-shadow); padding:11px 13px; }
+.sea-warn{ background:var(--sea-white); border:var(--sea-bd) solid var(--sea-sun);
+  box-shadow:4px 4px 0 var(--sea-sun); border-radius:var(--sea-r); padding:12px 14px;
+  display:flex; flex-direction:column; gap:7px; }
+.sea-warn ul{ margin:0; padding-inline-start:1.1em; display:flex; flex-direction:column; gap:5px; }
+.sea-warn li{ font-size:14px; line-height:1.5; color:var(--sea-sub); }
+.sea-tag{ margin:0; align-self:flex-start; font-size:13px; font-weight:600;
+  color:var(--sea-ink); background:var(--sea-sun);
+  border:2px solid var(--sea-ink); border-radius:999px; padding:4px 12px; }
+
+.sea-figure{ display:none; }
+.sea-figure img{ display:block; width:100%; height:auto;
+  filter:drop-shadow(4px 4px 0 var(--sea-ink)); }
+.sea-figure[data-ready="1"]{ display:block; }
+.sea-figure-entry{ width:clamp(88px,22vw,136px); align-self:flex-end; margin-block-start:-8px; }
+.sea-figure-win{ width:clamp(110px,26vw,190px); }
+
+@media (max-height:460px){
+  .sea-top{ padding-block:10px 4px; }
+  .sea-top h1{ font-size:25px; }
+  .sea-lede{ font-size:14px; }
+  .sea-body{ gap:11px; padding-block:11px; }
+  .sea-field{ min-height:4.6em; height:4.6em; font-size:16px; }
+  .sea-btn{ min-height:50px; font-size:18px; }
+  .sea-acts{ flex-direction:row; flex-wrap:wrap; }
+  .sea-acts .sea-btn{ flex:1 1 auto; }
+  .sea-wave,.sea-wave svg{ height:16px; }
+}
+
+.sea-row{ display:flex; align-items:stretch; gap:8px; }
+.sea-row .sea-card{ flex:1 1 auto; min-width:0; }
+.sea-more{ flex:none; width:52px; min-height:56px; cursor:pointer;
+  display:grid; place-items:center; color:var(--sea-sub);
+  background:var(--sea-white); border:var(--sea-bd) solid var(--sea-ink);
+  border-radius:var(--sea-r); box-shadow:var(--sea-shadow); }
+.sea-more:active{ transform:translate(3px,3px); box-shadow:1px 1px 0 var(--sea-ink); }
+
+.sea-sheet{ position:fixed; inset:0; z-index:30; display:grid; place-items:center;
+  padding:18px; background:rgba(11,60,73,.55); }   
+.sea-card-lg{ width:min(30em,100%); max-height:92dvh; overflow:auto;
+  background:var(--sea-sand); border:var(--sea-bd) solid var(--sea-ink);
+  border-radius:var(--sea-r-lg); box-shadow:var(--sea-shadow);
+  padding:16px; display:flex; flex-direction:column; gap:10px; }
+
+.sea-chips{ display:flex; flex-wrap:wrap; gap:8px; }
+.sea-chip{ font:inherit; font-size:15px; font-weight:600; min-height:44px; padding:0 16px;
+  cursor:pointer; background:var(--sea-white); color:var(--sea-ink);
+  border:2px solid var(--sea-ink); border-radius:999px; }
+.sea-chip[data-on="1"]{ background:var(--sea-sun); font-weight:700; }
+
+.sea-games{ display:grid; grid-template-columns:1fr; gap:10px; }
+@media (min-width:640px){ .sea-games{ grid-template-columns:1fr 1fr; } }
+.sea-game{ font:inherit; text-align:start; cursor:pointer;
+  display:flex; align-items:stretch; gap:12px; padding:11px;
+  background:var(--sea-white); color:var(--sea-ink);
+  border:var(--sea-bd) solid var(--sea-ink); border-radius:var(--sea-r);
+  box-shadow:var(--sea-shadow); min-height:88px;
+  transition:transform .08s ease, box-shadow .08s ease; }
+.sea-game:active{ transform:translate(3px,3px); box-shadow:1px 1px 0 var(--sea-ink); }
+.sea-game[disabled]{ opacity:.5; cursor:default; box-shadow:none; }
+
+.sea-game-art{ flex:none; width:92px; display:grid; place-items:center; }
+.sea-game-art svg{ width:100%; height:auto; display:block; }
+.sea-game-txt{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+.sea-game-txt b{ font-family:var(--sea-display); font-weight:800; font-size:19px; }
+.sea-game-line{ font-size:14px; color:var(--sea-sub); line-height:1.45; }
+.sea-game-meta{ font-size:13px; font-weight:600; color:var(--sea-ink); }
+
+</style>
+<style>
+.gp{
+  
+  --gp-root: clamp(15px, 1.35vw + .5vh + 8px, 29px);
+  --gp-pad: clamp(10px, 1.4vw, 20px);
+  font-size: var(--gp-root);
+  font-family: var(--sea-text);
+  color: var(--sea-ink);
+  background: var(--sea-sand);
+  height: 100dvh; width: 100%;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  padding: max(var(--gp-pad), env(safe-area-inset-top)) max(var(--gp-pad), env(safe-area-inset-right))
+           max(var(--gp-pad), env(safe-area-inset-bottom)) max(var(--gp-pad), env(safe-area-inset-left));
+  gap: .5em;
+}
+
+.gp, .gp *{ box-sizing: border-box; }
+
+.gp-top{ flex: none; display: flex; align-items: center; gap: .45em; flex-wrap: nowrap; }
+.gp-gap{ flex: 1 1 auto; min-width: 0; }
+.gp-step, .gp-turn{
+  flex: none; display: inline-flex; align-items: center; gap: .4em;
+  font-size: .82em; font-weight: 700; line-height: 1;
+  background: var(--sea-white); color: var(--sea-ink);
+  border: 2px solid var(--sea-ink); border-radius: 999px;
+  padding: .5em .8em; white-space: nowrap;
+}
+.gp-turn i{ width: .7em; height: .7em; border-radius: 50%; border: 2px solid var(--sea-ink); flex: none; }
+
+.gp-tool{
+  flex: none; font: inherit; font-size: .72em; font-weight: 700; line-height: 1;
+  min-height: 44px; padding: 0 .8em; cursor: pointer;
+  display: inline-flex; align-items: center; gap: .4em; white-space: nowrap;
+  background: transparent; color: var(--sea-sub);
+  border: 2px solid currentColor; border-radius: 999px;
+}
+.gp-tool:active{ transform: translate(1px, 1px); }
+.gp-tool-x{ color: var(--sea-coral); }
+
+@media (max-width: 560px){
+  .gp-tool span{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .gp-tool{ padding: 0 .7em; }
+}
+
+.gp-stage{
+  flex: 1 1 auto; min-height: 0; position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .55em;
+}
+
+.gp-teams{ flex: none; }
+.gp-tm{ display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: .4em; }
+.gp-team{
+  display: inline-flex; align-items: center; gap: .4em; min-width: 0;
+  background: var(--sea-white); border: 2px solid var(--sea-ink);
+  border-radius: 999px; padding: .32em .5em .32em .32em;
+  font-size: .82em; line-height: 1;
+}
+.gp-team i{ width: .8em; height: .8em; border-radius: 50%; border: 2px solid var(--sea-ink); flex: none; }
+.gp-team b{ font-weight: 700; white-space: nowrap; }
+.gp-team em{
+  font-style: normal; font-family: var(--sea-display); font-weight: 800;
+  min-width: 1.7em; height: 1.7em; padding: 0 .25em; border-radius: 999px;
+  background: var(--sea-ink); color: var(--sea-sand);
+  display: inline-grid; place-items: center; flex: none;
+}
+.gp-team.now{ border-color: var(--sea-coral); box-shadow: 0 3px 0 var(--sea-coral); }
+.gp-team.top em{ background: var(--sea-coral); }
+
+.gp-say{
+  flex: none; align-self: center; margin-block-start: -.15em;
+  font-family: var(--sea-display); font-weight: 800; font-size: .95em; line-height: 1;
+  padding: .4em .9em; border-radius: 999px; border: 2px solid var(--sea-ink);
+  background: var(--sea-white); color: var(--sea-ink);
+  opacity: 0; transform: translateY(4px); pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease;
+}
+.gp-say.on{ opacity: 1; transform: none; }
+.gp-say.is-good{ background: var(--sea-t3); color: var(--sea-white); }
+.gp-say.is-bad{ background: var(--sea-coral); color: var(--sea-white); }
+
+@keyframes gpOk{ 0%{ box-shadow: inset 0 0 0 0 var(--sea-t3); } 18%{ box-shadow: inset 0 0 0 .5em var(--sea-t3); } 100%{ box-shadow: inset 0 0 0 0 var(--sea-t3); } }
+@keyframes gpNo{ 0%{ box-shadow: inset 0 0 0 0 var(--sea-coral); } 18%{ box-shadow: inset 0 0 0 .5em var(--sea-coral); } 100%{ box-shadow: inset 0 0 0 0 var(--sea-coral); } }
+.gp.flash-ok{ animation: gpOk .5s ease; }
+.gp.flash-no{ animation: gpNo .5s ease; }
+@media (prefers-reduced-motion: reduce){
+  .gp.flash-ok, .gp.flash-no{ animation: none; }
+  .gp-say{ transition: none; }
+}
+
+.gp-sheet{
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: center;
+  padding: 18px; background: rgba(11, 60, 73, .55);   
+}
+.gp-sheet[hidden]{ display: none; }
+.gp-card{
+  width: min(30em, 100%); max-height: 92dvh; overflow: auto;
+  background: var(--sea-sand); color: var(--sea-ink);
+  border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r-lg);
+  box-shadow: var(--sea-shadow); padding: 18px 18px 20px;
+  display: flex; flex-direction: column; gap: 10px; text-align: center;
+}
+.gp-card h1{ margin: 0; font-family: var(--sea-display); font-weight: 800; font-size: clamp(24px, 5vw, 38px); line-height: 1.2; }
+.gp-card .gp-sub{ margin: 0; font-size: 15px; line-height: 1.55; color: var(--sea-sub); }
+.gp-acts{ display: flex; flex-direction: column; gap: 9px; margin-block-start: 4px; }
+.gp-b{
+  font: inherit; font-family: var(--sea-display); font-weight: 800; font-size: 17px;
+  min-height: 52px; padding: 0 16px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--sea-white); color: var(--sea-ink);
+  border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r);
+  box-shadow: var(--sea-shadow);
+}
+.gp-b:active{ transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--sea-ink); }
+.gp-b-main{ background: var(--sea-coral); color: var(--sea-white); }
+.gp-b-x{ background: none; box-shadow: none; border-color: var(--sea-sub); color: var(--sea-sub); font-size: 15px; min-height: 44px; }
+
+.gp-win .gp-wt{ display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-block: 4px; }
+.gp-win .gp-team{ font-size: 16px; }
+
+.gw-q{
+  width: min(26em, 100%); text-align: center;
+  font-family: var(--sea-display); font-weight: 800;
+  font-size: clamp(19px, 1.95em, 56px); line-height: 1.3;
+  margin: 0; overflow-wrap: anywhere;
+}
+
+.gw-opt{
+  font: inherit; font-size: 1.15em; line-height: 1.35; text-align: start;
+  
+  width: 100%; min-height: max(44px, 1.9em); padding: .3em .7em;
+  display: flex; align-items: center; gap: .5em; cursor: pointer;
+  background: var(--sea-white); color: var(--sea-ink);
+  border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r);
+  box-shadow: 0 4px 0 var(--sea-ink);
+}
+.gw-opt:active{ transform: translateY(2px); box-shadow: 0 2px 0 var(--sea-ink); }
+.gw-opt .k{
+  flex: none; width: 1.7em; height: 1.7em; border-radius: 50%;
+  background: var(--sea-sand); border: 2px solid var(--sea-ink);
+  display: grid; place-items: center;
+  font-family: var(--sea-display); font-weight: 800; font-size: .8em;
+}
+.gw-opt[data-st="ok"]{ background: var(--sea-t3); color: var(--sea-white); }
+.gw-opt[data-st="no"]{ background: var(--sea-coral); color: var(--sea-white); }
+.gw-opt[disabled]{ cursor: default; }
+.gw-opts{ width: min(26em, 100%); display: flex; flex-direction: column; gap: .35em; }
+
+.gw-tag{
+  margin: 0; align-self: center;
+  font-family: var(--sea-display); font-weight: 800; font-size: .8em; line-height: 1;
+  color: var(--sea-ink); background: var(--sea-sun);
+  border: 2px solid var(--sea-ink); border-radius: 999px; padding: .4em .9em;
+}
+
+.gw-head{ margin: 0; font-family: var(--sea-display); font-weight: 800;
+  font-size: clamp(16px, 1.2em, 36px); line-height: 1.3; text-align: center; }
+
+.gw-sub{ margin: 0; font-size: .8em; color: var(--sea-sub); text-align: center; line-height: 1.5; }
+
+.gw-board{ width: 100%; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.gw-board svg{ width: 100%; height: 100%; max-height: 100%; display: block; }
+
+</style>
+</head>
+<body style="margin:0;background:#fbf3e4">
+<script>window.__LESSONS = {"KW-SOC-G5-LOC-01":{"schema":"shift.lesson/1","lesson_id":"KW-SOC-G5-LOC-01","unit_id":"KW-SOC-G5-LOC","title":"الكرة الأرضية ومسطحاتها المائية","grade":5,"subject":"SOC","pages":[18,21],"edition":"KW-SOC-G5-S1@2025-2026","source":"منقول حرفياً من الحقائق المستخرجة في صفحة المراجعة — لا تأليف","objectives":[{"code":"KW-SOC-G5-LOC-01-01","text":"أقسام سطح الكرة الأرضية","short":"أقسام سطح الأرض"},{"code":"KW-SOC-G5-LOC-01-02","text":"أقسام المسطحات المائية على الكرة الأرضية","short":"أقسام المسطحات المائية"},{"code":"KW-SOC-G5-LOC-01-03","text":"تعريف المفاهيم: المسطحات المائية، المحيط، البحر، الخليج","short":"الفرق بين المحيط والبحر والخليج"}],"facts":[{"id":"f1","tag":"مفهوم","text":"الأرض: الكوكب الوحيد الذي توجد عليه الحياة","obj":"KW-SOC-G5-LOC-01-01","source":"موثّق"},{"id":"f2","tag":"رقم","text":"سطح الأرض: 71% مسطحات مائية و29% يابسة (قارات)","obj":"KW-SOC-G5-LOC-01-01","source":"موثّق"},{"id":"f3","tag":"مفهوم","text":"المسطحات المائية: أشكال المياه على سطح الأرض — محيطات، بحار، خلجان","obj":"KW-SOC-G5-LOC-01-02","source":"موثّق"},{"id":"f4a","tag":"مفهوم","text":"المحيط: مسطح مائي كبير جداً","obj":"KW-SOC-G5-LOC-01-03","source":"موثّق"},{"id":"f4b","tag":"مفهوم","text":"البحر: أصغر من المحيط","obj":"KW-SOC-G5-LOC-01-03","source":"موثّق"},{"id":"f4c","tag":"مفهوم","text":"الخليج: جزء من بحر أو محيط يمتدّ داخل اليابسة","obj":"KW-SOC-G5-LOC-01-03","source":"موثّق"},{"id":"f5a","tag":"اسم","text":"المحيطات الخمسة: الهادي، الأطلسي، الهندي، المتجمد الشمالي، المتجمد الجنوبي","obj":"KW-SOC-G5-LOC-01-02","source":"موثّق"},{"id":"f5b","tag":"اسم","text":"المحيط الهادي أكبر المحيطات","obj":"KW-SOC-G5-LOC-01-02","source":"موثّق"},{"id":"f6","tag":"خريطة","text":"خريطة العالم بالمحيطات والبحار (شكل 3)؛ رسم بياني لنسبة الماء واليابسة (شكل 1)","obj":"KW-SOC-G5-LOC-01-02","source":"موثّق"},{"id":"f7","tag":"صورة","text":"الكرة الأرضية ملوّنة بمفتاح (يابسة/ماء)؛ جزر المالديف وجزر القمر في نشاط تحديد نوع المسطح","obj":"KW-SOC-G5-LOC-01-02","source":"موثّق"}],"pairs":[{"a":"المسطحات المائية","b":"أشكال المياه على الأرض","obj":"KW-SOC-G5-LOC-01-03","from":"f3"},{"a":"المحيط","b":"مسطح مائي كبير جداً","obj":"KW-SOC-G5-LOC-01-03","from":"f4a"},{"a":"البحر","b":"أصغر من المحيط","obj":"KW-SOC-G5-LOC-01-03","from":"f4b"},{"a":"الخليج","b":"جزء يمتدّ داخل اليابسة","obj":"KW-SOC-G5-LOC-01-03","from":"f4c"},{"a":"الأرض","b":"الكوكب الوحيد فيه حياة","obj":"KW-SOC-G5-LOC-01-01","from":"f1"},{"a":"الهادي","b":"أكبر المحيطات","obj":"KW-SOC-G5-LOC-01-02","from":"f5b"}],"questions":[{"q":"كم نسبة المسطحات المائية من سطح الأرض؟","options":["71%","61%","79%"],"answer":0,"obj":"KW-SOC-G5-LOC-01-01","from":"f2"},{"q":"ما المسطحات المائية؟","options":["أشكال المياه على سطح الأرض","أشكال اليابسة على سطح الأرض","أشكال المياه داخل القارات فقط"],"answer":0,"obj":"KW-SOC-G5-LOC-01-02","from":"f3"},{"q":"ما المسطح المائي الكبير جداً؟","options":["المحيط","البحر","الخليج"],"answer":0,"obj":"KW-SOC-G5-LOC-01-03","from":"f4a"},{"q":"أيّ المسطحات أصغر من المحيط؟","options":["البحر","القارة","اليابسة"],"answer":0,"obj":"KW-SOC-G5-LOC-01-03","from":"f4b"},{"q":"ما المسطح المائي الذي يمتدّ داخل اليابسة؟","options":["الخليج","المحيط","البحر"],"answer":0,"obj":"KW-SOC-G5-LOC-01-03","from":"f4c"},{"q":"ما أكبر المحيطات؟","options":["الهادي","الأطلسي","الهندي"],"answer":0,"obj":"KW-SOC-G5-LOC-01-02","from":"f5b"}],"sequences":[{"label":"رتّب من الأكبر إلى الأصغر","order":["المحيط","البحر","الخليج"],"obj":"KW-SOC-G5-LOC-01-03","from":"f4a"}],"categories":[{"label":"امسك المحيطات وحدها","items":[{"t":"المحيط الهادي","in":true,"why":"أحد المحيطات الخمسة، وأكبرها مساحةً"},{"t":"المحيط الأطلسي","in":true,"why":"أحد المحيطات الخمسة"},{"t":"المحيط الهندي","in":true,"why":"أحد المحيطات الخمسة"},{"t":"المحيط المتجمد الشمالي","in":true,"why":"أحد المحيطات الخمسة"},{"t":"المحيط المتجمد الجنوبي","in":true,"why":"أحد المحيطات الخمسة"},{"t":"البحر المتوسط","in":false,"why":"بحر لا محيط — والبحر مسطح مائي أصغر من المحيط"},{"t":"بحر العرب","in":false,"why":"بحر لا محيط — والبحر مسطح مائي أصغر من المحيط"},{"t":"البحر الأحمر","in":false,"why":"بحر لا محيط — والبحر مسطح مائي أصغر من المحيط"}],"obj":"KW-SOC-G5-LOC-01-02","from":"f5a","source":"موثّق · ص ٢٠"}],"places":[],"note_questions":"سؤال واحد لكل حقيقة · ولا سؤال يُجاب بمعرفة عامة بلا هذا الدرس (كان «ما الكوكب الوحيد الذي توجد عليه الحياة؟» ومشتّتاته من خارج الدرس) · والمشتّت قريب من الصحيح ومن مفردات الدرس (كان 50% و90% مقابل 71% — قسمةَ منتصف ومبالغةً، فصارا 61% و79%). الثلاثة تُفحص آلياً في `questionIssues`.","note_facts":"الحقائق المركّبة فُصلت (‏f4 → f4a/b/c و f5 → f5a/b) — نقلٌ أمين: الكتاب يذكرها صراحةً في سطر واحد. والفصل يفتح ستّ حقائق قابلة للسؤال فتكتمل دورتان لثلاثة فِرَق.","note_pairs":"نصوص البطاقات مختصرة اختصاراً أميناً من الحقيقة نفسها — بطاقة المطابقة أضيق من سطر الخيار، والحدّ مقيس في `PAIR_MAX`.","note_objectives":"لكل هدف **صيغة قصيرة** تُعرض على شاشة النتيجة — النصّ المنهجي الكامل لا يُقرأ في عشر ثوانٍ من آخر الصفّ (قيس 15 سبتمبر: 53 محرفاً تفيض عن الشاشة).","note_sequences":"تسلسل واحد لا غير: «المحيط ← البحر ← الخليج» من تعريفات ص ٢٠ (‏f4a–f4c). والصفحات ١٨–٢١ **لا تحمل ترتيباً زمنياً ولا مرحلياً آخر**: الكتاب يذكر أنّ أكبر المحيطات هو الهادي ولا يرتّب الخمسة، فترتيبها بالمساحة تأليفٌ لا نقل. ولأن `timeline` يشترط أربعة عناصر فأكثر، يبقى هذا التسلسل الثلاثي دون حدّ المحرّك — نقصٌ في الكتاب لا في العقد.","note_categories":"تصنيف واحد من ص ٢٠: المحيطات الخمسة كما عدّها الكتاب نصّاً، ومقابلها البحار الثلاثة المكتوبة بأسمائها على خريطة العالم شكل (٣) — لا اسم من خارج الصفحتين. **صيغة النداء من عندنا** («امسك المحيطات وحدها») لأن الكتاب يكتب المهمّة بصيغة «حدّد نوع المسطح المائي»، أمّا كل عنصر وسببه فمن الكتاب. و**الخلجان بلا أعضاء**: الصفحات ١٨–٢١ تعرّف الخليج ولا تسمّي خليجاً واحداً، فلا يصحّ تصنيف ثالث. والنشاط الأول ص ٢١ تصنيفٌ بالصور لا بالأسماء، وأجوبته غير مطبوعة، فلم يُنقل منه شيء."},"KW-SOC-G5-LOC-02":{"schema":"shift.lesson/1","lesson_id":"KW-SOC-G5-LOC-02","unit_id":"KW-SOC-G5-LOC","title":"قارات الكرة الأرضية","grade":5,"subject":"SOC","pages":[22,23],"edition":"KW-SOC-G5-S1@2025-2026","source":"منقول حرفياً من الحقائق المستخرجة في صفحة المراجعة — لا تأليف","objectives":[{"code":"KW-SOC-G5-LOC-02-01","text":"تعريف القارة","short":"تعريف القارة"},{"code":"KW-SOC-G5-LOC-02-02","text":"أسماء قارات العالم","short":"أسماء قارات العالم"},{"code":"KW-SOC-G5-LOC-02-03","text":"أكبر القارات وأصغرها مساحةً","short":"أكبر القارات وأصغرها"},{"code":"KW-SOC-G5-LOC-02-04","text":"القارة غير المأهولة بالسكان","short":"القارة غير المأهولة"},{"code":"KW-SOC-G5-LOC-02-05","text":"موقع وطني الكويت","short":"موقع وطني الكويت"}],"facts":[{"id":"f1","tag":"مفهوم","text":"القارة: مساحة كبيرة من اليابسة يحيط بها الماء","obj":"KW-SOC-G5-LOC-02-01","source":"موثّق · ص ٢٢ و٢٣"},{"id":"f2","tag":"رقم","text":"قارات العالم سبع قارات","obj":"KW-SOC-G5-LOC-02-02","source":"موثّق · ص ٢٢"},{"id":"f3","tag":"اسم","text":"قارات العالم هي: آسيا، أفريقيا، أوروبا، أمريكا الشمالية، أمريكا الجنوبية، أستراليا، القطبية الجنوبية","obj":"KW-SOC-G5-LOC-02-02","source":"موثّق · ص ٢٢"},{"id":"f4","tag":"اسم","text":"آسيا أكبر قارات العالم مساحةً وأكثرها في عدد السكان","obj":"KW-SOC-G5-LOC-02-03","source":"موثّق · ص ٢٢"},{"id":"f5","tag":"اسم","text":"أستراليا أصغر القارات من حيث المساحة","obj":"KW-SOC-G5-LOC-02-03","source":"موثّق · ص ٢٢"},{"id":"f6","tag":"اسم","text":"القارة القطبية الجنوبية قارة غير مأهولة بالسكان","obj":"KW-SOC-G5-LOC-02-04","source":"موثّق · ص ٢٢"},{"id":"f7","tag":"اسم","text":"يقع وطني الكويت في قارة آسيا","obj":"KW-SOC-G5-LOC-02-05","source":"موثّق · ص ٢٢ و٢٣"}],"pairs":[{"a":"القارة","b":"مساحة كبيرة من اليابسة","obj":"KW-SOC-G5-LOC-02-01","from":"f1"},{"a":"آسيا","b":"أكبر القارات مساحةً وسكاناً","obj":"KW-SOC-G5-LOC-02-03","from":"f4"},{"a":"أستراليا","b":"أصغر القارات مساحةً","obj":"KW-SOC-G5-LOC-02-03","from":"f5"},{"a":"القطبية الجنوبية","b":"قارة غير مأهولة بالسكان","obj":"KW-SOC-G5-LOC-02-04","from":"f6"},{"a":"الكويت","b":"تقع في قارة آسيا","obj":"KW-SOC-G5-LOC-02-05","from":"f7"}],"questions":[{"q":"ما القارة؟","options":["مساحة كبيرة من الماء","مساحة كبيرة من اليابسة","دولة كبيرة من اليابسة"],"answer":1,"obj":"KW-SOC-G5-LOC-02-01","from":"f1"},{"q":"كم عدد قارات العالم؟","options":["خمس قارات","ست قارات","سبع قارات"],"answer":2,"obj":"KW-SOC-G5-LOC-02-02","from":"f2"},{"q":"آسيا وأفريقيا وأوروبا ثلاث من قارات العالم، والرابعة منها:","options":["أمريكا الشمالية","أمريكا الشرقية","أمريكا الغربية"],"answer":0,"obj":"KW-SOC-G5-LOC-02-02","from":"f3"},{"q":"آسيا أكبر قارات العالم مساحةً، وهي أيضاً:","options":["أصغرها في عدد السكان","الثانية في عدد السكان","أكثرها في عدد السكان"],"answer":2,"obj":"KW-SOC-G5-LOC-02-03","from":"f4"},{"q":"أستراليا في قارات العالم هي:","options":["ثاني أصغر القارات بعد أوروبا","أصغر القارات","دولة لا قارة"],"answer":1,"obj":"KW-SOC-G5-LOC-02-03","from":"f5"},{"q":"أيّ القارات غير مأهولة بالسكان؟","options":["القطبية الجنوبية","أستراليا","أمريكا الجنوبية"],"answer":0,"obj":"KW-SOC-G5-LOC-02-04","from":"f6"},{"q":"في أيّ قارة يقع وطني الكويت؟","options":["أفريقيا","آسيا","أوروبا"],"answer":1,"obj":"KW-SOC-G5-LOC-02-05","from":"f7"}],"sequences":[],"categories":[{"label":"امسك القارات وحدها","items":[{"t":"آسيا","in":true,"why":"إحدى القارات السبع، وأكبرها مساحةً وأكثرها سكاناً"},{"t":"أفريقيا","in":true,"why":"إحدى قارات العالم السبع"},{"t":"أوروبا","in":true,"why":"إحدى قارات العالم السبع"},{"t":"أمريكا الشمالية","in":true,"why":"إحدى قارات العالم السبع"},{"t":"أمريكا الجنوبية","in":true,"why":"إحدى قارات العالم السبع"},{"t":"أستراليا","in":true,"why":"إحدى القارات السبع، وأصغرها مساحةً"},{"t":"القطبية الجنوبية","in":true,"why":"إحدى القارات السبع، وهي غير مأهولة بالسكان"},{"t":"المحيط الهادي","in":false,"why":"محيط على الخريطة نفسها — ماء لا يابسة، والقارة مساحة كبيرة من اليابسة"},{"t":"المحيط الأطلسي","in":false,"why":"محيط على الخريطة نفسها — ماء لا يابسة"},{"t":"المحيط الهندي","in":false,"why":"محيط على الخريطة نفسها — ماء لا يابسة"},{"t":"المحيط المتجمد الشمالي","in":false,"why":"محيط على الخريطة نفسها — ماء لا يابسة"},{"t":"المحيط المتجمد الجنوبي","in":false,"why":"محيط على الخريطة نفسها — ماء لا يابسة"}],"obj":"KW-SOC-G5-LOC-02-02","from":"f3","source":"موثّق · ص ٢٢ و٢٣"}],"places":[],"note_questions":"سؤال لكل حقيقة، وكل خيار من مفردات الدرس — لا اسم قارة خارج `f3`، **ولا مشتّت صحيح خارج الدرس ولا مناقض لنصّ سؤاله**. وسبب كل مشتّت:\n• «مساحة كبيرة من الماء» (f1): يقلب التعريف — الماء يحيط باليابسة لا العكس، وهو خلط القارة بالمحيط.\n• «دولة كبيرة من اليابسة» (f1): الخلط بين القارة والدولة — طفلة تعرف «الكويت» دولةً وتقيس عليها.\n• «خمس قارات» و«ست قارات» (f2): العدد الأقرب للصحيح لا رقم بعيد، فلا يُستبعد بالشكل.\n• «أمريكا الشرقية» و«أمريكا الغربية» (f3): **اسمان مركّبان لا وجود لهما** — القائمة تعرف الشمالية والجنوبية وحدهما. والسؤال يقيس معرفة القائمة لا حفظ ترتيبها: الخيارات الثلاثة «أمريكا + جهة»، فالتمييز بمعرفة أيّ جهة قارةٌ فعلاً.\n  (وهذا استثناء مُقرَّر من قاعدة «لا اسم قارة خارج f3»: المحظور اسمُ قارة **حقيقية** غائبة عن القائمة — نفيُها يعلّم خطأ؛ أمّا الاسم المركّب الذي لا وجود له فنفيُه تصحيح.)\n• «أصغرها في عدد السكان» (f4): **أخصب خطأ في الصفحة** — الكتاب يجمع الأكبر مساحةً والأكثر سكاناً في جملة واحدة، فقلب أحد الطرفين مغرٍ.\n• «الثانية في عدد السكان» (f4): من طرف السكان نفسه لا من حقيقة أخرى — خطأ ترتيب لا خطأ محور، فلا يكشف نفسه بسؤال آخر.\n• «ثاني أصغر القارات بعد أوروبا» (f5): ينسب «الأصغر» إلى أوروبا — وهي صغيرة فعلاً في ذهن الطفلة، والخطأ في الترتيب لا في الجنس.\n• «دولة لا قارة» (f5): عدّها دولة — اسمها اسم دولة أيضاً.\n• «أستراليا» (f6): نسبة «غير مأهولة» إليها بدل القطبية الجنوبية — قِلّة سكانها تُلبِس.\n• «أمريكا الجنوبية» (f6): تشترك مع الصحيح في كلمة «الجنوبية» وحدها.\n• «أفريقيا» و«أوروبا» (f7): أقرب قارتين إلى الكويت في ذهن الطفلة.","note_facts":"منقول من صفحتَي ٢٢–٢٣ (صفحتا الملف ٢٣–٢٤). **تحويلان مُقرَّان من المؤسّس:** (١) الكتاب يسرد المعلومة حواراً على لسان أمين المكتبة، ونُقلت جملاً خبرية لأن سطر الخيار لا يسع حواراً — المعنى كما هو والصياغة تغيّرت. (٢) نصّ الـPDF يخرج مشوّه الإملاء («األرضية» و«أسرتاليا» و«اوروبا» و«أوربا» في الصفحة نفسها)، فأُعيدت الحروف إلى صورتها الصحيحة. وسبع حقائق لا ستّ: الصفحتان تحملان سبعاً موثّقة، ولكل هدف من الخمسة حقيقة — و`f7` وحدها تخدم «موقع وطني الكويت».","note_pairs":"خمسة أزواج من خمس حقائق، والوجه الأول اسمٌ قصير (٤–١٦ محرفاً) لأن بطاقة المطابقة أضيق من سطر الخيار.","note_objectives":"الأهداف الخمسة من «ماذا سنتعلم» ص ٢٢، وصيغها المختصرة ١٢–٢٧ محرفاً (الحدّ ٣٤).","note_sequences":"**لا تسلسل في هذا الدرس.** الصفحتان ٢٢–٢٣ تذكران أكبر القارات (آسيا) وأصغرها (أستراليا) ولا ترتّبان السبع بينهما، ولا يرد في الدرس تاريخ ولا مراحل. فترتيب القارات بالمساحة أو بالسكان تأليفٌ من خارج الكتاب — تُرك فارغاً عمداً.","note_categories":"تصنيف واحد: القارات السبع كما عدّها الحوار ص ٢٢ ومفتاح الخريطة ص ٢٣، ومقابلها المحيطات الخمسة المكتوبة بأسمائها على شكل (٤) في الصفحة نفسها — الفرق بينهما هو التعريف المقرّر: القارة يابسة يحيط بها الماء. **صيغة النداء من عندنا** وكل عنصر وسببه من الكتاب. ولم يُكتب تصنيف «مأهولة / غير مأهولة» لأن الكتاب ينصّ على أن القطبية الجنوبية غير مأهولة ولا ينصّ على سكّان القارات الستّ الأخرى — فنسبته إليها استنتاج لا نقل."},"KW-SOC-G5-LOC-03":{"schema":"shift.lesson/1","lesson_id":"KW-SOC-G5-LOC-03","unit_id":"KW-SOC-G5-LOC","title":"وطني الكويت ودول الخليج العربية","grade":5,"subject":"SOC","pages":[24,25],"edition":"KW-SOC-G5-S1@2025-2026","source":"منقول من صفحتَي الدرس ٢٤–٢٥ — لا تأليف","objectives":[{"code":"KW-SOC-G5-LOC-03-01","text":"موقع دول الخليج العربية بالنسبة للخليج العربي","short":"موقع دول الخليج العربية"},{"code":"KW-SOC-G5-LOC-03-02","text":"موقع وطني الكويت بالنسبة لشبه الجزيرة العربية","short":"موقع الكويت من شبه الجزيرة"},{"code":"KW-SOC-G5-LOC-03-03","text":"سبب تسمية دول الخليج العربية بهذا الاسم","short":"سبب تسمية دول الخليج"}],"facts":[{"id":"f1","tag":"مفهوم","text":"يقع وطني الكويت ودول الخليج العربية على مسطح مائي اسمه الخليج العربي","obj":"KW-SOC-G5-LOC-03-01","source":"موثّق · ص ٢٤"},{"id":"f2","tag":"مفهوم","text":"سُمّيت دول الخليج العربية بهذا الاسم لأنها تقع على الخليج العربي","obj":"KW-SOC-G5-LOC-03-03","source":"موثّق · ص ٢٤"},{"id":"f3","tag":"اسم","text":"يقع وطني الكويت في جهة الشمال الغربي بالنسبة للخليج العربي","obj":"KW-SOC-G5-LOC-03-01","source":"موثّق · ص ٢٤"},{"id":"f4","tag":"اسم","text":"يقع وطني الكويت في جهة الشمال الشرقي بالنسبة لشبه الجزيرة العربية","obj":"KW-SOC-G5-LOC-03-02","source":"موثّق · ص ٢٤"},{"id":"f5","tag":"اسم","text":"دول الخليج العربية على الخريطة: دولة الكويت والمملكة العربية السعودية ومملكة البحرين ودولة قطر ودولة الإمارات وسلطنة عُمان","obj":"KW-SOC-G5-LOC-03-01","source":"موثّق · ص ٢٤ و٢٥ — شكل (٦) وخريطة النشاط الأول"},{"id":"f6","tag":"اسم","text":"تحمل خريطة دول الخليج العربية مسطحين مائيين: الخليج العربي وخليج عُمان","obj":"KW-SOC-G5-LOC-03-01","source":"موثّق · ص ٢٤ — شكل (٦)"}],"pairs":[{"a":"الخليج العربي","b":"المسطح الذي تقع عليه دول الخليج","obj":"KW-SOC-G5-LOC-03-01","from":"f1"},{"a":"وطني الكويت","b":"شمال غربي الخليج العربي","obj":"KW-SOC-G5-LOC-03-01","from":"f3"},{"a":"شبه الجزيرة","b":"الكويت في شمالها الشرقي","obj":"KW-SOC-G5-LOC-03-02","from":"f4"},{"a":"سلطنة عُمان","b":"إحدى دول الخليج العربية","obj":"KW-SOC-G5-LOC-03-01","from":"f5"},{"a":"خليج عُمان","b":"مسطح مائي على خريطة الدرس","obj":"KW-SOC-G5-LOC-03-01","from":"f6"}],"questions":[{"q":"على أي مسطح مائي تقع دول الخليج العربية؟","options":["الخليج العربي","خليج عُمان","الخليج الشمالي"],"answer":0,"obj":"KW-SOC-G5-LOC-03-01","from":"f1"},{"q":"في أي جهة يقع وطني الكويت بالنسبة للخليج العربي؟","options":["الجنوب الغربي","الشمال الغربي","الجنوب الشرقي"],"answer":1,"obj":"KW-SOC-G5-LOC-03-01","from":"f3"},{"q":"أين يقع وطني الكويت بالنسبة لشبه الجزيرة؟","options":["الجنوب الشرقي","الجنوب الغربي","الشمال الشرقي"],"answer":2,"obj":"KW-SOC-G5-LOC-03-02","from":"f4"},{"q":"أيّ هذه من دول الخليج العربية؟","options":["سلطنة عُمان","خليج عُمان","شبه الجزيرة العربية"],"answer":0,"obj":"KW-SOC-G5-LOC-03-01","from":"f5"},{"q":"لماذا سُمّيت دول الخليج العربية بهذا الاسم؟","options":["لأنها تقع على خليج عُمان","لأنها تقع في شبه الجزيرة","لأنها تقع على الخليج العربي"],"answer":2,"obj":"KW-SOC-G5-LOC-03-03","from":"f2"}],"sequences":[],"categories":[],"places":[],"note_questions":"سؤال لكل حقيقة، وكل خيار من مفردات الصفحتين.\n• «خليج عُمان» (f1): المسطح الآخر المكتوب على الخريطة نفسها — أقرب خطأ ممكن.\n• «الخليج الشمالي» (f1): **اسم مركّب لا وجود له** — الطفلة تعرف «الخليج» و«الشمال» من الدرس فتركّبهما؛ نفيُه تصحيح لا تعليمُ خطأ.\n• «الجنوب الغربي» و«الجنوب الشرقي» (f3 وf4): قلبُ طرف واحد من الجهة المركّبة — أخصب خطأ في الصفحة لأن الدرس يجمع جهتين مركّبتين متشابهتين في سطرين متتاليين.\n• «خليج عُمان» (f5): الخلط بين المسطح والدولة — الاسم نفسه يتكرّر في «سلطنة عُمان».\n• «شبه الجزيرة العربية» (f5): الخلط بين الإقليم والدولة.\n• «لأنها تقع على خليج عُمان» و«لأنها تقع في شبه الجزيرة» (f2): سببان من مفردات الدرس نفسه، وكلاهما يصف موقعاً حقيقياً لكنه ليس سبب التسمية.","note_facts":"ستّ حقائق من صفحتَي الدرس: أربع من نصّ «الموضوع» ص ٢٤، وواحدة من أسماء الدول على شكل (٦) وخريطة النشاط الأول ص ٢٥، وواحدة من اسمَي المسطحين على شكل (٦). **والاسم كما كُتب في الكتاب**: «مملكة البحرين» على شكل (٦) و«البحرين» على خريطة ص ٢٥ — أُخذت الصيغة الأولى.","note_pairs":"خمسة أزواج من خمس حقائق، والوجه الأول اسمٌ قصير لأن بطاقة المطابقة أضيق من سطر الخيار.","note_objectives":"الأهداف الثلاثة من «ماذا سنتعلم» ص ٢٤ بصيغها المختصرة (٢٠–٢٦ محرفاً، والحدّ ٣٤).","note_sequences":"**وجدتُ تسلسلاً واحداً ولم أكتبه:** النشاط الأول ص ٢٥ يرقّم خطّ سير العربة من الكويت (١ الكويت ← ٢ السعودية ← ٣ البحرين ← ٤ قطر ← ٥ الإمارات ← ٦ عُمان). تسلسلٌ واحد يعطي المحرّك جولةً واحدة، وجولةٌ واحدة تُجلس فريقين متفرّجين (القرار ٣٣)، فتُرك الحقل فارغاً حتى يأتي في الوحدة ما يكمل ثلاثة. ولا ترتيب زمنيّ في الدرس أصلاً.","note_categories":"**وجدتُ تصنيفاً واحداً ولم أكتبه:** «دول الخليج العربية الست مقابل المسطحين المائيين على الخريطة» — ستة أعضاء داخل الفئة واثنان خارجها. والحدّ ثلاثة تصنيفات لكل درس (القرار ٣٣)، والصفحتان لا تحملان غيره: شكل (٥) صندوقٌ بثمانية أسهم بلا أسماء جهات مكتوبة، فلا يصحّ منه تصنيف «أصلية/فرعية»."},"KW-SOC-G5-LOC-04":{"schema":"shift.lesson/1","lesson_id":"KW-SOC-G5-LOC-04","unit_id":"KW-SOC-G5-LOC","title":"وطني الكويت ودول الوطن العربي","grade":5,"subject":"SOC","pages":[26,27],"edition":"KW-SOC-G5-S1@2025-2026","source":"منقول من صفحتَي الدرس ٢٦–٢٧ — لا تأليف","objectives":[{"code":"KW-SOC-G5-LOC-04-01","text":"تعريف الوطن العربي","short":"تعريف الوطن العربي"},{"code":"KW-SOC-G5-LOC-04-02","text":"مفهوم المضيق","short":"مفهوم المضيق"},{"code":"KW-SOC-G5-LOC-04-03","text":"موقع وطني الكويت بالنسبة للوطن العربي","short":"موقع الكويت من الوطن العربي"},{"code":"KW-SOC-G5-LOC-04-04","text":"السمات المشتركة بين دول الوطن العربي","short":"السمات المشتركة بين دوله"}],"facts":[{"id":"f1","tag":"مفهوم","text":"الوطن العربي: مجموعة من الدول تجمعها سمات مشتركة مثل الدين الإسلامي واللغة العربية والتراث والتاريخ","obj":"KW-SOC-G5-LOC-04-01","source":"موثّق · ص ٢٦"},{"id":"f2","tag":"مفهوم","text":"المضيق: ممر مائي ضيق من الماء يفصل بين مسطحين مائيين","obj":"KW-SOC-G5-LOC-04-02","source":"موثّق · ص ٢٦"},{"id":"f3","tag":"اسم","text":"الوطن العربي يقع في وسط العالم ويمتد بين قارتي آسيا وأفريقيا","obj":"KW-SOC-G5-LOC-04-01","source":"موثّق · ص ٢٦"},{"id":"f4","tag":"اسم","text":"يفصل بين دول القارتين مسطح مائي هو البحر الأحمر","obj":"KW-SOC-G5-LOC-04-01","source":"موثّق · ص ٢٦"},{"id":"f5","tag":"رقم","text":"عدد دول الوطن العربي ٢٢ دولة","obj":"KW-SOC-G5-LOC-04-01","source":"موثّق · ص ٢٦"},{"id":"f6","tag":"اسم","text":"يقع وطني الكويت في الجهة الشرقية من الوطن العربي","obj":"KW-SOC-G5-LOC-04-03","source":"موثّق · ص ٢٦"},{"id":"f7","tag":"مفهوم","text":"يطل الوطن العربي على العديد من المسطحات المائية","obj":"KW-SOC-G5-LOC-04-01","source":"موثّق · ص ٢٦"},{"id":"f8","tag":"مفهوم","text":"الوطن العربي يشرف على العديد من المضائق المائية جعلت له أهمية كبيرة في الملاحة والتجارة العالمية","obj":"KW-SOC-G5-LOC-04-02","source":"موثّق · ص ٢٦"},{"id":"f9","tag":"اسم","text":"تحمل خريطة الوطن العربي ثلاثة مضائق مائية هي مضيق جبل طارق ومضيق هرمز ومضيق باب المندب، وقناة مائية هي قناة السويس","obj":"KW-SOC-G5-LOC-04-02","source":"موثّق · ص ٢٦ — شكل (٧) ومفتاحه"},{"id":"f10","tag":"اسم","text":"مسطحات مكتوبة على خريطة الوطن العربي: البحر المتوسط والبحر الأحمر والمحيط الأطلسي والمحيط الهندي وبحر العرب وخليج عدن","obj":"KW-SOC-G5-LOC-04-01","source":"موثّق · ص ٢٦ — شكل (٧)"},{"id":"f11","tag":"اسم","text":"دول مكتوبة على خريطة الوطن العربي: المغرب والجزائر وتونس وليبيا ومصر والسودان وموريتانيا والصومال والسعودية واليمن وعمان والعراق وسوريا، ومعها خارج لون الوطن العربي أسبانيا وإيران","obj":"KW-SOC-G5-LOC-04-01","source":"موثّق · ص ٢٦ — شكل (٧)"},{"id":"f12","tag":"مفهوم","text":"نشاط ص ٢٧: البحر الذي يفصل بين الجناح الأفريقي والجناح الآسيوي من الوطن العربي","obj":"KW-SOC-G5-LOC-04-01","source":"موثّق · ص ٢٧ — النشاط الثالث"}],"pairs":[{"a":"المضيق","b":"ممر مائي ضيق بين مسطحين","obj":"KW-SOC-G5-LOC-04-02","from":"f2"},{"a":"البحر الأحمر","b":"يفصل بين دول القارتين","obj":"KW-SOC-G5-LOC-04-01","from":"f4"},{"a":"وطني الكويت","b":"شرق الوطن العربي","obj":"KW-SOC-G5-LOC-04-03","from":"f6"},{"a":"٢٢ دولة","b":"عدد دول الوطن العربي","obj":"KW-SOC-G5-LOC-04-01","from":"f5"},{"a":"قناة السويس","b":"قناة مائية على الخريطة","obj":"KW-SOC-G5-LOC-04-02","from":"f9"},{"a":"اللغة العربية","b":"سمة تجمع دول الوطن العربي","obj":"KW-SOC-G5-LOC-04-04","from":"f1"}],"questions":[{"q":"ما الوطن العربي؟","options":["مجموعة من الدول تجمعها سمات","مجموعة من القارات المتصلة","دولة واحدة كبيرة المساحة"],"answer":0,"obj":"KW-SOC-G5-LOC-04-01","from":"f1"},{"q":"ما المضيق؟","options":["ممر بري ضيق بين دولتين","ممر مائي ضيق من الماء","مسطح مائي واسع بين قارتين"],"answer":1,"obj":"KW-SOC-G5-LOC-04-02","from":"f2"},{"q":"بين أي قارتين يمتد الوطن العربي؟","options":["آسيا وأوروبا","أفريقيا وأوروبا","آسيا وأفريقيا"],"answer":2,"obj":"KW-SOC-G5-LOC-04-01","from":"f3"},{"q":"ما المسطح المائي الذي يفصل بين دول القارتين؟","options":["البحر الأحمر","البحر المتوسط","المحيط الهندي"],"answer":0,"obj":"KW-SOC-G5-LOC-04-01","from":"f4"},{"q":"كم عدد دول الوطن العربي؟","options":["١٨ دولة","٢٦ دولة","٢٢ دولة"],"answer":2,"obj":"KW-SOC-G5-LOC-04-01","from":"f5"},{"q":"في أي جهة يقع وطني الكويت من الوطن العربي؟","options":["الجهة الغربية","الجهة الشرقية","الجهة الشمالية"],"answer":1,"obj":"KW-SOC-G5-LOC-04-03","from":"f6"},{"q":"أيّ هذه قناة مائية لا مضيقاً؟","options":["مضيق هرمز","مضيق باب المندب","قناة السويس"],"answer":2,"obj":"KW-SOC-G5-LOC-04-02","from":"f9"}],"sequences":[],"categories":[{"label":"امسك المضائق والقنوات المائية وحدها","items":[{"t":"مضيق جبل طارق","in":true,"why":"مضيق مائي على خريطة الدرس"},{"t":"مضيق هرمز","in":true,"why":"مضيق مائي على خريطة الدرس"},{"t":"مضيق باب المندب","in":true,"why":"مضيق مائي على خريطة الدرس"},{"t":"قناة السويس","in":true,"why":"قناة مائية على خريطة الدرس"},{"t":"البحر الأحمر","in":false,"why":"بحر لا ممر مائي ضيق"},{"t":"البحر المتوسط","in":false,"why":"بحر لا ممر مائي ضيق"},{"t":"المحيط الهندي","in":false,"why":"محيط لا ممر مائي ضيق"},{"t":"بحر العرب","in":false,"why":"بحر لا ممر مائي ضيق"}],"obj":"KW-SOC-G5-LOC-04-02","from":"f9","source":"موثّق · ص ٢٦ — شكل (٧) ومفتاحه"},{"label":"امسك المسطحات المائية وحدها","items":[{"t":"البحر المتوسط","in":true,"why":"مسطح مائي مكتوب على الخريطة"},{"t":"البحر الأحمر","in":true,"why":"مسطح مائي مكتوب على الخريطة"},{"t":"المحيط الأطلسي","in":true,"why":"مسطح مائي مكتوب على الخريطة"},{"t":"المحيط الهندي","in":true,"why":"مسطح مائي مكتوب على الخريطة"},{"t":"بحر العرب","in":true,"why":"مسطح مائي مكتوب على الخريطة"},{"t":"خليج عدن","in":true,"why":"مسطح مائي مكتوب على الخريطة"},{"t":"السودان","in":false,"why":"دولة لا مسطح مائي"},{"t":"أسبانيا","in":false,"why":"دولة لا مسطح مائي"},{"t":"إيران","in":false,"why":"دولة لا مسطح مائي"}],"obj":"KW-SOC-G5-LOC-04-01","from":"f10","source":"موثّق · ص ٢٦ — شكل (٧)"},{"label":"امسك دول الوطن العربي وحدها","items":[{"t":"المغرب","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"الجزائر","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"تونس","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"ليبيا","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"مصر","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"السودان","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"موريتانيا","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"الصومال","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"السعودية","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"اليمن","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"العراق","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"سوريا","in":true,"why":"مكتوبة داخل لون الوطن العربي"},{"t":"أسبانيا","in":false,"why":"مكتوبة على الخريطة خارج لون الوطن العربي"},{"t":"إيران","in":false,"why":"مكتوبة على الخريطة خارج لون الوطن العربي"}],"obj":"KW-SOC-G5-LOC-04-01","from":"f11","source":"موثّق · ص ٢٦ — شكل (٧)"}],"places":[],"note_questions":"سبعة أسئلة، سؤال لكل حقيقة، وكل خيار من مفردات الصفحتين.\n• «مجموعة من القارات المتصلة» و«دولة واحدة كبيرة المساحة» (f1): الخلط بين تجمّع دول وبين قارة أو دولة واحدة — وهو الخلط الذي يسبق مفهوم «الوطن العربي» عند الطفلة.\n• «ممر بري ضيق بين دولتين» (f2): يبدّل الماء بالبرّ ويبقي «الممر الضيق» — أقرب خطأ إلى التعريف.\n• «مسطح مائي واسع بين قارتين» (f2): يقلب الضيق سعةً، وهو وصف البحر لا المضيق.\n• «آسيا وأوروبا» و«أفريقيا وأوروبا» (f3): قارة صحيحة مع أخرى من خارج الامتداد — نصفُ الجواب صحيح فيغري.\n• «البحر المتوسط» و«المحيط الهندي» (f4): مسطحان مكتوبان على الخريطة نفسها ويلامسان الوطن العربي، لكنهما لا يفصلان بين جناحيه.\n• «١٨ دولة» و«٢٦ دولة» (f5): على بُعد ١٨٪ من الصحيح صعوداً وهبوطاً، وليسا من مضاعفات العشرة فلا يُستبعدان بالشكل.\n• «الجهة الغربية» و«الجهة الشمالية» (f6): الجهات الثلاث الأخرى من الرباعية نفسها.\n• «مضيق هرمز» و«مضيق باب المندب» (f9): مضيقان حقيقيان على الخريطة، والسؤال يسأل عن القناة — فنفيُهما تصحيحٌ لا تعليمُ خطأ.","note_facts":"اثنتا عشرة حقيقة: ثمانٍ من نصّ الدرس وفقاعاته ص ٢٦، وثلاث من أسماء شكل (٧) ومفتاحه — المضائق والقناة، والمسطحات، والدول. ونصّ الكتاب يكتب «أوربا» في درس لاحق و«أسبانيا» على هذه الخريطة، وأُبقيت الصيغتان كما طُبعتا. وحقيقةٌ من نشاط ص ٢٧ تسمّي جناحَي الوطن العربي: الأفريقي والآسيوي.","note_pairs":"ستة أزواج من ستّ حقائق، والوجه الأول اسمٌ قصير (٦–١٣ محرفاً).","note_objectives":"الأهداف الأربعة من «ماذا سنتعلم» ص ٢٦ (١٢–٢٧ محرفاً في صيغها المختصرة، والحدّ ٣٤).","note_sequences":"**لا تسلسل في هذا الدرس.** الصفحتان لا تحملان ترتيباً زمنياً ولا مرحلياً: الخريطة تسمّي ولا ترتّب، والنشاطان تلوينٌ وتحويط. وترتيب المضائق من الغرب إلى الشرق قراءةٌ منّي للخريطة لا نصٌّ في الكتاب، فلم يُكتب.","note_categories":"ثلاثة تصنيفات، كلّها من شكل (٧) ومفتاحه في الصفحة نفسها: المضائق والقناة (٤ داخل الفئة و٤ خارجها) · المسطحات المائية (٦ و٣) · دول الوطن العربي (١٢ واثنتان خارج اللون). صيغة النداء من عندنا، وكل عنصر وسببه من الخريطة. وأسماء الدول المأخوذة هي المكتوبة بخطّ ظاهر على الخريطة؛ والأسماء الصغيرة جداً (لبنان، فلسطين، الأردن، جيبوتي، جزر القمر ودول الخليج) لم تُنقل لأن قراءتها من الصورة غير مؤكّدة."},"KW-SOC-G5-LOC-05":{"schema":"shift.lesson/1","lesson_id":"KW-SOC-G5-LOC-05","unit_id":"KW-SOC-G5-LOC","title":"وطني الكويت ودول العالم الإسلامي","grade":5,"subject":"SOC","pages":[28,29],"edition":"KW-SOC-G5-S1@2025-2026","source":"منقول من صفحتَي الدرس ٢٨–٢٩ — لا تأليف","objectives":[{"code":"KW-SOC-G5-LOC-05-01","text":"تعريف العالم الإسلامي","short":"تعريف العالم الإسلامي"},{"code":"KW-SOC-G5-LOC-05-02","text":"مميزات موقع العالم الإسلامي","short":"مميزات موقع العالم الإسلامي"},{"code":"KW-SOC-G5-LOC-05-03","text":"موقع وطني الكويت بالنسبة للعالم الإسلامي","short":"موقع الكويت من العالم الإسلامي"}],"facts":[{"id":"f1","tag":"مفهوم","text":"العالم الإسلامي: مجموعة من الدول يكون فيها عدد المسلمين ٥٠٪ فأكثر من مجموع السكان","obj":"KW-SOC-G5-LOC-05-01","source":"موثّق · ص ٢٨"},{"id":"f2","tag":"مفهوم","text":"يشغل العالم الإسلامي مساحة واسعة شبه متصلة من اليابسة","obj":"KW-SOC-G5-LOC-05-02","source":"موثّق · ص ٢٨"},{"id":"f3","tag":"مفهوم","text":"يحتل العالم الإسلامي موقعاً متوسطاً بين قارات العالم","obj":"KW-SOC-G5-LOC-05-02","source":"موثّق · ص ٢٨"},{"id":"f4","tag":"اسم","text":"يمتد العالم الإسلامي في أربع قارات هي آسيا وأفريقيا وأوربا وأمريكا الجنوبية","obj":"KW-SOC-G5-LOC-05-02","source":"موثّق · ص ٢٨"},{"id":"f5","tag":"اسم","text":"يقع وطني الكويت في وسط العالم الإسلامي","obj":"KW-SOC-G5-LOC-05-03","source":"موثّق · ص ٢٨"},{"id":"f6","tag":"اسم","text":"خريطة العالم الإسلامي شكل (٨) مكتوب عليها القارات: آسيا وأفريقيا وأستراليا وأمريكا الشمالية وأمريكا الجنوبية، والمحيطات الخمسة","obj":"KW-SOC-G5-LOC-05-02","source":"موثّق · ص ٢٨ — شكل (٨)"}],"pairs":[{"a":"العالم الإسلامي","b":"نصف السكان مسلمون فأكثر","obj":"KW-SOC-G5-LOC-05-01","from":"f1"},{"a":"أربع قارات","b":"آسيا وأفريقيا وأوربا وأمريكا","obj":"KW-SOC-G5-LOC-05-02","from":"f4"},{"a":"وطني الكويت","b":"في وسط العالم الإسلامي","obj":"KW-SOC-G5-LOC-05-03","from":"f5"},{"a":"موقع متوسط","b":"بين قارات العالم","obj":"KW-SOC-G5-LOC-05-02","from":"f3"},{"a":"مساحة واسعة","b":"شبه متصلة من اليابسة","obj":"KW-SOC-G5-LOC-05-02","from":"f2"}],"questions":[{"q":"ما نسبة المسلمين في دول العالم الإسلامي؟","options":["٤٠٪ فأكثر","٥٠٪ فأكثر","٦٥٪ فأكثر"],"answer":1,"obj":"KW-SOC-G5-LOC-05-01","from":"f1"},{"q":"ما مساحة العالم الإسلامي من اليابسة؟","options":["مساحة واسعة شبه متصلة","مساحة صغيرة متفرقة","مساحة متقطعة بين البحار"],"answer":0,"obj":"KW-SOC-G5-LOC-05-02","from":"f2"},{"q":"ما موقع العالم الإسلامي بين قارات العالم؟","options":["موقعاً طرفياً بعيداً","موقعاً في قارة واحدة","موقعاً متوسطاً"],"answer":2,"obj":"KW-SOC-G5-LOC-05-02","from":"f3"},{"q":"في كم قارة يمتد العالم الإسلامي؟","options":["ثلاث قارات","أربع قارات","خمس قارات"],"answer":1,"obj":"KW-SOC-G5-LOC-05-02","from":"f4"},{"q":"أين يقع وطني الكويت من العالم الإسلامي؟","options":["في شمال العالم الإسلامي","في غرب العالم الإسلامي","في وسط العالم الإسلامي"],"answer":2,"obj":"KW-SOC-G5-LOC-05-03","from":"f5"}],"sequences":[],"categories":[],"places":[],"note_questions":"خمسة أسئلة، سؤال لكل حقيقة، وكل خيار من مفردات الصفحتين.\n• «٤٠٪ فأكثر» و«٦٥٪ فأكثر» (f1): على بُعد ٢٠٪ و٣٠٪ من الصحيح — قريبان فلا يُستبعدان بالشكل، والنسبة هي بيت القصيد في التعريف.\n• «مساحة صغيرة متفرقة» و«مساحة متقطعة بين البحار» (f2): يقلبان «الواسعة شبه المتصلة» إلى ضدّها — وهو تصوّر شائع عند طفلة ترى الدول مبعثرة على الخريطة.\n• «موقعاً طرفياً بعيداً» و«موقعاً في قارة واحدة» (f3): الأول يقلب «المتوسط»، والثاني يخلط الموقع المتوسط بالانحصار في قارة — وهو الخطأ الذي يسبق الفكرة.\n• «ثلاث قارات» و«خمس قارات» (f4): العددان المجاوران للصحيح صعوداً وهبوطاً (٢٥٪ لكلٍّ).\n• «في شمال العالم الإسلامي» و«في غرب العالم الإسلامي» (f5): جهتان بدل «الوسط» — والكويت تقع شمال الخليج في الدرس الثالث، فالخلط بين الموقعين وارد.","note_facts":"ستّ حقائق: خمس من نصّ الدرس ص ٢٨، وواحدة من أسماء شكل (٨). ونصّ الكتاب يكتب «أوربا» في هذا الدرس و«أوروبا» في غيره — نُقلت كما طُبعت هنا.","note_pairs":"خمسة أزواج من خمس حقائق، والوجه الأول اسمٌ قصير (١٠–١٥ محرفاً).","note_objectives":"الأهداف الثلاثة من «ماذا سنتعلم» ص ٢٨ (٢١–٣٠ محرفاً، والحدّ ٣٤).","note_sequences":"**لا تسلسل في هذا الدرس.** لا تاريخ ولا مراحل ولا ترتيب في الصفحتين؛ القارات الأربع تُذكر عدّاً لا ترتيباً.","note_categories":"**وجدتُ تصنيفاً واحداً ولم أكتبه:** «القارات التي يمتد فيها العالم الإسلامي (آسيا · أفريقيا · أوربا · أمريكا الجنوبية) مقابل ما لم يُذكر منها على الخريطة (أستراليا · أمريكا الشمالية)» — أربعة أعضاء داخل الفئة واثنان خارجها. والحدّ ثلاثة تصنيفات لكل درس (القرار ٣٣)، ولا يحمل الدرس غيره: نشاط ص ٢٩ ثلاثة فراغات بلا أجوبة مطبوعة، وأشكال القارات فيه صُوَرٌ صمّاء بلا أسماء."}};
+window.__LESSON_LIST = [{"id":"KW-SOC-G5-LOC-01","title":"الكرة الأرضية ومسطحاتها المائية","pages":[18,21]},{"id":"KW-SOC-G5-LOC-02","title":"قارات الكرة الأرضية","pages":[22,23]},{"id":"KW-SOC-G5-LOC-03","title":"وطني الكويت ودول الخليج العربية","pages":[24,25]},{"id":"KW-SOC-G5-LOC-04","title":"وطني الكويت ودول الوطن العربي","pages":[26,27]},{"id":"KW-SOC-G5-LOC-05","title":"وطني الكويت ودول العالم الإسلامي","pages":[28,29]}];
+window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
+
+<div id="app"></div>
+<script>  addEventListener('load', function () {
+    requestAnimationFrame(function () {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = 'fonts-sea.css';
+      document.head.appendChild(l);
+    });
+  });
+</script>
+<script src="kw/pack.js"></script>
+<script>
+SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2ZjYzLjEuMTAxAAAAAAAAAAAAAAD/+zjAAAAAAAAAAAAAAAAAAAAAAABJbmZvAAAADwAAAAUAAAUQAFVVVVVVVVVVVVVVVVVVVVVVVVWAgICAgICAgICAgICAgICAgICAgKqqqqqqqqqqqqqqqqqqqqqqqqqq1dXV1dXV1dXV1dXV1dXV1dXV1dX//////////////////////////wAAAABMYXZjNjMuMS4AAAAAAAAAAAAAAAAkBUAAAAAAAAAFEDFKZx0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/+zjEAAAJFE86VPeAAcIZbTcewAAAKwLgqG8lYhYOcJGWNEBqxDy5oec5Bx6zjNwDOCrHGtn4QQegyIJbC4HQyRP/R/Hufg+CAIAhwf/4nf5d/BAMZd//4Y///UCAAAAAAAB0t113//4AABf3IqQYkEb6GI8lawbieGGPM3SpjGyBgegiti8GF5ZTOtcugMIX8JZy8uPIWzg8cUfLVzppdlT5pXeC95vf3ophrMzaYdpa/uf97z2z+/j/tgRjAUJC5q5flh4uRWcDYEfmzSokRAAEptttwdr/+zjEBIAMCSFtvPKAMXqWaozzDlTVZxoUyC1HKhrdbOLttn3DpDIQPKuVqkOQzuKlMInIiCKqETKyGZXJnECkVlu5mdEqmsvK2ajPZTOs1W62b+hFVzkMxXaui6xMva5r9icne1+s6WQ14qYCMkcgwhoHhaDHCwECOZPIw6EVob0uyfIsgyfgJBiRto0KDqglFDXlLZ3pJsjheMcCDKqf5FMMMauyfTp1i7qFCeJYMHPP0AI8SWvk1B0TASZwm5yBq/HVUz7qshKuMwE0nIPhQVMIVxVB93L/+zjEBoMLuP9QbDBrIZ0a6Q2GDhCNtpfZVvH8awNAWKIfgQEMN4jjGfZQoNbw/FgIApY6sVNZUCGSZvY7a4fEMvwQpNyxpnkflKVPmRJfMl53v//tv41IqirzphompOaHE9r/9SgUk5YJXFTb1EsLKMAWxrcVymqyBrbhFtlHkF4dSKRRYOvuBRuIwHR4aLJ4y2ngvRClx2l8itopVrmgQ00TTGJwEF84XmDX/edOnnlCOZERfgzAUTHIINYPM+icyYYxV4VUdu6KndOUgJZ5txtsBWhSZTH/+zjEBYAL0PVhRJhn8TSM6BzzChQrKQDTpA8gkcc5K20gFAEihlUbhqAKCKA4xIzXZyUE4Jjl85VuRwKX5s5szGGKwzXZlkY1pT6R+cVVyjS+aBhx4FQSPAzixVKiywaSCuHRyO2SSRAGopJJA2uMNQm6LijcbfMK8dUqdOnB+oczbghOd57wSS4KjjzOVNqAzCnDQ4esYeUDQ40o8GiIaEQ8BCUaGmeIiqj38hHned4af///QjNMK0GXgRAKeRVByi/qszLENkBKeifaXKDyAkhAm4rtfrn/+zjEEQPKVGD4DDzQQAAANIAAAARL6wZRBR3FAY5YTmXbIOInQuamjRQkSYeCZkVFnwKKGhWKiweAoMigOTQVb/iv/1ilTEFNRTQuMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=","good":"data:audio/mpeg;base64,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OAi0B4QwAoIWIkkgud/6hEWolf+z5GIq3e2bEJ+gMAXWkBgAEv8nfyCiZp1GfHZkFHYADhePXlUgYxWGZn//8b8////n58o4KHQ4CARx84ZWqBIcIhV1Gz3AeEEl/Ejw6VcTS+59Sf//qdqVAAApxgAgAMH/+zjEVYEKmMVHoJqRETiYpvQR7pjKXb/0/RT3NR7pnHn2JOaxryxz92o1KGjy/qm+n///lllKY1RhYPC5uagoGJ1BzpxeTCjqHb///XszNIyOrZEX1t///4//9CifqM7ABKl8qP/9Bbb36qu1XstQyv5FK4n+UJyIfDP/36fOoFb60CyKcDZQr4ApIDa0QHrAWbhaKqsxdVP+m7dPrSQMjWjRqdaKPRV1IZ////m3/zE+Hvx6A4EsYIf6/xYX6cNG8VxS++YY1a7l51LXGFiYWmFzbgEqq33/+zjEZYIKXYUtQ+xcAVMt5ATR0ihOUi+HIjpAJGgNgAMWDAOJEeaqnTbSopGLmFIxbWzTdZxzi//5k/o1t/////ykVgFoADwViWfUvaqvgIE1IWE/16nELlRIxIQiMg4y0ZyN/9ZgOcXCRAJgL3CPiBH6+gzpHzZ3QezrTSTTS6jb//3baku1LVUAQAC4FTTXcunGdMr6ak8CEswkaMTCwkAlNRCXWaEE0+0MOUQg9WSfso8SAwswsxnWUYdSslBJDsVilK36kdv/oTr/0LkeV/kb85P73Nr/+zjEcwCKQW8YBo6PgRWfYyTQybiHAQAIGREACxyU+ZnSPsKxGrwgQj5PkyYgxCFJs5VKgUjmrMZ6pNZ5vR/KxVKAiQxpntY0pblKlMpjP+pSt/9RKI836wQrDHhhX0bplbqn+ol1AYEAAAGGyR7Mg6EEmn5lX9rLLJUcmVrSP/WSoZH/rKhqGCg0P+y0mpMsuX/f9Zf+yoatUJqTVGCg0AoVDITwKFSQFZrFTISI4FFA8/+aBkRjFUxBTUU0LjBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/+zjEiIAJ6YcSxASvgUExIWRgiXBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/+zjEmgPKKQDhBIRlgAAANIAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=","soft":"data:audio/mpeg;base64,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","turn":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2ZjYzLjEuMTAxAAAAAAAAAAAAAAD/+zjAAAAAAAAAAAAAAAAAAAAAAABJbmZvAAAADwAAAAgAAAeYADg4ODg4ODg4ODg4OFVVVVVVVVVVVVVVVXFxcXFxcXFxcXFxcXGOjo6Ojo6Ojo6Ojo6qqqqqqqqqqqqqqqqqx8fHx8fHx8fHx8fH4+Pj4+Pj4+Pj4+Pj4////////////////wAAAABMYXZjNjMuMS4AAAAAAAAAAAAAAAAkBkAAAAAAAAAHmIsicc4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/+zjEAAAJqLsa1JMAAa8mMHcwgAICAACQgxcLgmGyfYI0be/+f0wEABCSYWnn//u9yIjPfgmnfiIh4iIiIx4jP4jPEf///+M93bEydqOLBB3//vKBjxO8P5Muf5P6wffrB/bfX7a36/X+fT6fUagCvbg6Xh0F8dpLdiNOJSWKlG1x2D3FhoQEQPoTiMKEB9eyIMHURipVD6eXsHA8FA7Z9KuFV+vv4oyIu5ub34/0q6m6TmuvpJ9/fqvr/r+5vf3u/+r+b7O/+6/PtnLaazgAUwTFdrkogH3/+zjEBQAKwLtiHJQAAbMpLTDEjXDdkvSFsNjgkLKgVYPLGEQI4yh1vEOzi72ttA5I5P8hJlKuvaRtNCXT6TURExb/Q6BzyZMACrHGlBFhWKjsBOJuFmm0oe5vAHxXtLWsAeTQIDKLIKwGkReHAeF83UqgXBQCwULqnBGY8ULkIjNl2HJOUsf9st6nsq6G00oitQZxLQ4/jKGTILAjw2BaZYVHsJOHLma75QnNi0YhZ1/LJ5gv+JWzCEpyESnapeU8jgMXnwMSB5rhnKDPoQF2SEACAuKytLf/+zjEBQAMDIFrjCTJAXkTrWTEjShSLwZBwSEEqZpBSrXQMioVJMErKBARjq639JE5grGWhO9PrmtksYnz0JllfGw5SyQw1MGAUPIQ+Fz4NMa1GWfCw40LIlSQdEoeivmslpSa9+WF3ZwPLeAkCIADQDqAO58W49LDpkG0XR0RLkSFRzBKMpMFhRqyzBsVIiIVtxHR/CVWtWnLnDg+cOA/Udgy8NuKhsNg0ZWvGgV5Y0fKXERMsabiQExKtXbxzlqB7ExIDuA716hqIVAAggAqAHywO9yMcOn/+zjEBwALmIdtRhhnwWqfbmjDDkDxxgUUGGARSKQPDMoGKhiBxvPA30S1o3gQzZznh8dz+8EmjQwglDpZTAqKGhAED0QCOfMFGsCIWPqtSljXEqTFJT8uoIlGztYou0oIT1RJq7miEAm+AdkrlNesTqrxJDlShOxH8fVrwmIdN1x2xFQoZAiI7danQdNEcANHWGXxv9nlUnidIuF5ZeWrw8yMyr/lF4ke9EOVdAhwWFwZEKOxa4NM0a7YoIj1VREJhAABKgVpEJ5TNi2nJ7voDyZibX7XVRL/+zjEDICMRXNtR4xTgW8t7VyTCfF2PNDun3sQIgsLyiNbV4KDzCkeCkEZhkRI2+/9JnochNGYZCPKE3er6vwRsjlwsuOXL6r6r2Yzsi2dtf7GIlfL69X+/OYVSQrNFgBMBGSriKTwSOoQyui/FSq4TJl6g1HE+Nn0xsKDK2a28dmsxpjYiZe0Mi2vcysmjpxdK1zEYylo52Z09VKre1Sl5f3uxaka+6PJlRnz/q22ZqNp1/4JRASt+hoAoMAiSlKEozDLNnSBpCdcgc9A0a1WkbQqjjQAhKb/+zjEDwALIKttRiRhwViT7FiTDhBWbPvNaFY8gIYhP6q7mTlg1KdUyJIxhl9wocUQPBbPlxRh0ed5ZOxzVhaIZ9R6qZBkMgJR8AiBD+o0IRQAAFAhAQnDQiQNJBLlT7KOk1WyM8NBrFD9OLlGyqMO2eXSJGSpqXWP2mYNWEgxLkF30C7wM4cJFzIyBlixyaqQWPCXiVxow9kexJYWgLXla1vQS/JV1Qh4jCEQSE3QUxauHk1sAodiotddRurYI8jIFIMKag0FMO0U4ZBRo1229j/WmqlGk1//+zjEGIAKxMVhtMGAAi0qpNc1MADu3Moa+t7//VKMO4BPZnT1qB0+wBGpA86eUBs9vvQPGu+s64xLACCAAAG86ngdxK3/g5iBB9z/8wwExw/Ga/w7gA2qOG+gaKgFJIcZJ8LHRmRZxDlaXi8EXBuEMCg2dD8klq0fxcQBBQbOlkXQoMPiDUddS1t/hYaLNLQpE1EdBkYMgg2Oizf+v/w9ISkLsrCzSIDKlQcohozJOqX6v//82FdIER4Wul6OomSKlUxKpspMQU1FNC4wqqqqqqqqqqqqqqr/+zjECQPAAAGkHAAAIAAANIAAAASqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=","win":"data:audio/mpeg;base64,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"};
+
+</script>
+<script>
+(function () {
+  const KEY = 'shift.session.v1';
+  const LAST = 'shift.session.last.v1';
+
+  function read() {
+    try { return JSON.parse(localStorage.getItem(KEY) || 'null'); }
+    catch (e) { console.warn('SHIFT: تعذّرت قراءة الحالة —', e && e.message); return null; }
+  }
+
+  function write(s) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(s));
+       
+      const back = JSON.parse(localStorage.getItem(KEY) || 'null');
+      return !!back && back.at === s.at;
+    } catch (e) { console.warn('SHIFT: تعذّر حفظ الحالة —', e && e.message); return false; }
+  }
+
+  function Store() {
+    const self = { state: read() };
+    self.open = init => { self.state = Object.assign({ at: Date.now() }, init || {}); write(self.state); return self.state; };
+    self.patch = fields => {
+      self.state = Object.assign({}, self.state || {}, fields, { at: Date.now() });
+      return write(self.state);
+    };
+    self.clear = () => { try { localStorage.removeItem(KEY); } catch (e) {} self.state = null; };
+     
+    self.keepLast = s => { try { localStorage.setItem(LAST, JSON.stringify(s || {})); } catch (e) {} };
+    self.last = () => { try { return JSON.parse(localStorage.getItem(LAST) || 'null'); } catch (e) { return null; } };
+    return self;
+  }
+
+  const PICK = 'shift.lesson.v1';
+  Store.pick = id => {
+    try { localStorage.setItem(PICK, String(id || '')); return true; }
+    catch (e) { console.warn('SHIFT: تعذّر حفظ اختيار الدرس —', e && e.message); return false; }
+  };
+  Store.picked = () => { try { return localStorage.getItem(PICK) || ''; } catch (e) { return ''; } };
+
+  const BANK = 'shift.play.v1';
+  Store.pickBank = (id, engine) => {
+    try {
+      if (!id) { localStorage.removeItem(BANK); return true; }
+      localStorage.setItem(BANK, JSON.stringify({ id: String(id), engine: String(engine || 'quiz') }));
+      const back = JSON.parse(localStorage.getItem(BANK) || 'null');
+      return !!back && back.id === String(id);
+    } catch (e) { console.warn('SHIFT: تعذّر حفظ اختيار المسابقة —', e && e.message); return false; }
+  };
+  Store.pickedBank = () => {
+    try { const v = JSON.parse(localStorage.getItem(BANK) || 'null'); return (v && v.id) ? v : null; }
+    catch (e) { console.warn('SHIFT: تعذّرت قراءة اختيار المسابقة —', e && e.message); return null; }
+  };
+  Store.clearBank = () => { try { localStorage.removeItem(BANK); return true; } catch (e) { return false; } };
+
+  const G = (typeof window !== 'undefined' ? window : globalThis);
+  G.SHIFT = G.SHIFT || {}; G.SHIFT.Store = Store;
+  if (typeof module !== 'undefined' && module.exports) module.exports = Store;
+})();
+
+</script>
+<script>
+(function () {
+  const G = (typeof window !== 'undefined' ? window : globalThis);
+  const H = {};
+
+  H.ROUTES = { hub: 'index.html', play: 'play.html', report: 'report.html' };
+  H.go = name => { G.location.href = H.ROUTES[name] || H.ROUTES.hub; };
+  H.back = () => { if (G.history && G.history.length > 1) G.history.back(); else H.go('hub'); };
+
+  H.param = k => { try { return new URLSearchParams(G.location.search).get(k); } catch (e) { return null; } };
+
+  H.print = () => { try { G.print(); return true; } catch (e) { console.warn('SHIFT: تعذّرت الطباعة —', e && e.message); return false; } };
+
+  H.share = async (text, title) => {
+    try { if (G.navigator && G.navigator.share) { await G.navigator.share({ text, title: title || 'SHIFT' }); return 'shared'; } }
+    catch (e) { if (e && e.name === 'AbortError') return 'cancelled'; }
+    try { await G.navigator.clipboard.writeText(text); return 'copied'; }
+    catch (e) { console.warn('SHIFT: تعذّر النسخ —', e && e.message); return 'manual'; }
+  };
+
+  G.SHIFT = G.SHIFT || {}; G.SHIFT.host = H;
+})();
+
+</script>
+<script>
+(function () {
+  const G = (typeof window !== 'undefined' ? window : globalThis);
+  const S = G.SHIFT = G.SHIFT || {};
+  const B = {};
+
+  B.LIM = { min: 2, max: 4, q: 90, a: 40 };
+   
+  B.FIT = {
+    quiz:   { name: 'سباق المعرفة',  min: 2, max: 4 },
+    runner: { name: 'عدّاء الديرة',  min: 3, max: 3 },
+  };
+
+  const ORD = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع',
+    'الثامن', 'التاسع', 'العاشر', 'الحادي عشر', 'الثاني عشر'];
+  const ord = i => ORD[i] || String(i + 1);
+   
+  const stripNum = s => String(s).replace(/^\s*(?:[0-9٠-٩]{1,2}|[أ-ي])\s*[\).\-–—:]\s*/, '').trim();
+   
+  const stripBullet = s => String(s).replace(/^\s*[-–—•·]\s*/, '').trim();
+   
+  const MARK = /[*✓✔️√☑✅★☆]/;
+  function unmark(line) {
+    let t = String(line).trim(), on = false;
+    const head = t.match(/^\s*(?:صح|الصحيحة|الإجابة|الجواب)\s*[:：]\s*/);
+    if (head) { on = true; t = t.slice(head[0].length); }
+    const tail = t.match(/\s*[*✓✔️√☑✅★☆]+\s*$/);
+    if (tail) { on = true; t = t.slice(0, t.length - tail[0].length); }
+    const lead = t.match(/^\s*[*✓✔️√☑✅★☆]+\s*/);
+    if (lead) { on = true; t = t.slice(lead[0].length); }
+    return { t: stripBullet(stripNum(t)), on };
+  }
+
+  B.parse = function (text) {
+    const L = B.LIM;
+    const raw = String(text || '').replace(/\r/g, '');
+     
+    const lines = raw.split('\n').map(l => l.trim());
+    const isQ = l => /[؟?]\s*$/.test(l);
+    let blocks = [], cur = [];
+    const flush = () => { if (cur.length) blocks.push(cur); cur = []; };
+    for (const l of lines) {
+      if (!l) { flush(); continue; }
+      if (isQ(l) && cur.length >= 3) flush();
+      cur.push(l);
+    }
+    flush();
+
+    let head = [];
+    const usable = blocks.filter(b => b.length >= 3).length;
+    if (blocks.length && usable * 2 < blocks.length && lines.some(isQ)) {
+      blocks = []; cur = []; head = [];
+      for (const l of lines) {
+        if (!l) continue;                                    
+        if (isQ(l)) { flush(); cur.push(l); continue; }
+        if (!cur.length && !blocks.length) { head.push(l); continue; }
+        cur.push(l);
+      }
+      flush();
+    }
+
+    const items = [], problems = [], dropped = [];
+    if (head.length) problems.push('تُرك ما قبل أول سؤال (' + head.length + (head.length === 1 ? " سطر): «" : " أسطر), أوّلها: «") + head[0].slice(0, 26) + '».');
+    blocks.forEach((b, i) => {
+      const q = stripBullet(stripNum(b[0]));
+      const short = q.length > 26 ? q.slice(0, 26) + '…' : q;
+      const label = 'السؤال ' + ord(i) + (q ? ' «' + short + '»' : '');
+      const bad = msg => { problems.push(label + ': ' + msg); dropped.push(short || ('السؤال ' + ord(i))); };
+      const rest = b.slice(1).map(unmark).filter(x => x.t);
+
+      if (!q) return bad('لا يوجد نص للسؤال.');
+      if (!rest.length) return bad('بلا إجابات — اكتب تحته إجابتين على الأقل.');
+      if (rest.length < L.min) return bad('إجابة واحدة فقط — المطلوب ' + L.min + ' على الأقل.');
+      if (rest.length > L.max) return bad(rest.length + ' إجابات — الحدّ ' + L.max + '.');
+      const marked = rest.filter(x => x.on);
+      if (marked.length > 1) return bad('حدّدت ' + marked.length + ' إجابات صحيحة — الصحيحة واحدة فقط.');
+      const texts = rest.map(x => x.t);
+      if (new Set(texts).size !== texts.length) return bad('تكرّرت إجابة — الإجابات يجب أن تختلف.');
+      if (q.length > L.q) return bad('نصّ السؤال طويل (' + q.length + ' حرفاً) — اختصره إلى ' + L.q + '.');
+      const over = texts.find(x => x.length > L.a);
+      if (over) return bad('إجابة طويلة («' + over.slice(0, 18) + '…») — اختصرها إلى ' + L.a + ' حرفاً.');
+
+      items.push({ q, a: texts, c: marked.length ? rest.findIndex(x => x.on) : -1 });
+    });
+    return { items, problems, dropped, blocks: blocks.length };
+  };
+
+  B.pending = items => (items || []).filter(it => it.c < 0).length;
+   
+  B.ready = items => (items || []).filter(it => it.c >= 0);
+
+  B.fits = (it, key) => {
+    const f = B.FIT[key]; if (!f || !it) return false;
+    const n = (it.a || []).length;
+    return it.c >= 0 && n >= f.min && n <= f.max;
+  };
+   
+  const COUNT = ['', 'الواحد', 'الاثنين', 'الثلاثة', 'الأربعة', 'الخمسة', 'الستّة',
+    'السبعة', 'الثمانية', 'التسعة', 'العشرة'];
+   
+  const AR = n => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
+  B.fitLine = function (items, key) {
+    const f = B.FIT[key]; if (!f) return '';
+    const ready = B.ready(items), n = ready.filter(it => B.fits(it, key)).length;
+    if (!ready.length) return '';
+    if (n === ready.length) return f.name + ' يقبلها كلّها';
+    const need = f.min === f.max ? ('يحتاج ' + AR(f.min) + ' خيارات')
+      : ('يحتاج ' + AR(f.min) + '–' + AR(f.max) + ' خيارات');
+    const whole = COUNT[ready.length] ? ('أسئلتك ' + COUNT[ready.length]) : ('أسئلتك الـ' + AR(ready.length));
+    return AR(n) + ' من ' + whole + ' تعمل في ' + f.name + ' (' + need + ')';
+  };
+
+  B.serialize = items => (items || []).map(it =>
+    [it.q].concat((it.a || []).map((t, k) => t + (k === it.c ? ' *' : ''))).join('\n')
+  ).join('\n\n');
+
+  const KEY = 'shift.bank.v1';
+  const read = () => {
+    try { const v = JSON.parse(localStorage.getItem(KEY) || 'null'); return (v && Array.isArray(v.games)) ? v : { games: [] }; }
+    catch (e) { console.warn('SHIFT: تعذّرت قراءة بنك الأسئلة —', e && e.message); return { games: [] }; }
+  };
+   
+  const write = v => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(v));
+      const back = JSON.parse(localStorage.getItem(KEY) || 'null');
+      return !!back && (back.games || []).length === (v.games || []).length;
+    } catch (e) { console.warn('SHIFT: تعذّر حفظ بنك الأسئلة —', e && e.message); return false; }
+  };
+
+  B.list = () => read().games.map(g => ({ id: g.id, title: g.title, n: (g.items || []).length, at: g.at, grade: g.grade || '' }))
+    .sort((a, b) => (b.at || 0) - (a.at || 0));
+  B.get = id => read().games.find(g => g.id === id) || null;
+
+  B.GRADES = [
+    { id: 'g4', name: 'الصف الرابع' },
+    { id: 'g5', name: 'الصف الخامس' },
+    { id: '',   name: 'بلا صفّ' },
+  ];
+  B.gradeName = g => (B.GRADES.find(x => x.id === (g || '')) || B.GRADES[2]).name;
+
+  B.setMeta = function (id, fields) {
+    const v = read();
+    const g = v.games.find(x => x.id === id);
+    if (!g) return { ok: false, why: 'لم تعد هذه المسابقة على الجهاز.' };
+    if (typeof fields.title === 'string') {
+      const t = fields.title.trim().slice(0, 40);
+      if (!t) return { ok: false, why: 'الاسم لا يكون فارغاً.' };
+      g.title = t;
+    }
+    if (typeof fields.grade === 'string') g.grade = B.GRADES.some(x => x.id === fields.grade) ? fields.grade : '';
+    g.at = (S.nowOverride || Date.now());
+    const ok = write(v);
+    return { ok, why: ok ? '' : 'لم يُحفظ التعديل على هذا الجهاز.' };
+  };
+
+  B.save = function (title, items, id) {
+    const v = read();
+    const now = (S.nowOverride || Date.now());
+    const clean = (items || []).filter(it => it && it.q && (it.a || []).length >= B.LIM.min);
+    if (!clean.length) return { ok: false, why: 'لا سؤال مكتمل لحفظه.' };
+    const gid = id || ('G' + now.toString(36) + Math.floor(now % 997).toString(36));
+    const k0 = v.games.findIndex(x => x.id === gid);
+     
+    const keep = k0 >= 0 ? (v.games[k0].grade || '') : '';
+    const g = { id: gid, title: String(title || 'أسئلتي').slice(0, 40), items: clean, at: now, grade: keep };
+    const k = v.games.findIndex(x => x.id === gid);
+    if (k >= 0) v.games[k] = g; else v.games.unshift(g);
+     
+    let trimmed = 0;
+    while (v.games.length > 40) { v.games.pop(); trimmed++; }
+    const ok = write(v);
+    return { ok, id: gid, trimmed, why: ok ? '' : 'لم تُحفظ على هذا الجهاز — تعمل الآن فقط. انسخ نصّ أسئلتك.' };
+  };
+
+  B.remove = function (id) {
+    const v = read(); const n = v.games.length;
+    v.games = v.games.filter(g => g.id !== id);
+    if (v.games.length === n) return false;
+    return write(v);
+  };
+
+  S.bank = B;
+  if (typeof module !== 'undefined' && module.exports) module.exports = B;
+})();
+
+</script>
+<script>
+(function () {
+  const G = (typeof window !== 'undefined' ? window : globalThis);
+  const S = G.SHIFT = G.SHIFT || {};
+
+  const REG = [];
+  const BY = {};
+
+  const MUST = ['id', 'name', 'line', 'comeback'];
+
+  const Games = {
+     
+    define(spec) {
+      const miss = MUST.filter(k => !spec || !spec[k]);
+      if (spec && !spec.mount && !spec.page) miss.push('mount أو page');
+      if (miss.length) {
+        console.warn('SHIFT: لعبة مرفوضة — ينقصها ' + miss.join('، ') +
+          (miss.indexOf('comeback') >= 0 ? ' (آلية العودة شرطٌ في العقد: لا فوز محسوم مبكراً)' : ''));
+        return false;
+      }
+      if (BY[spec.id]) { console.warn('SHIFT: لعبة مكرّرة — ' + spec.id); return false; }
+      const g = Object.assign({
+        mins: [8, 15],
+        teams: { min: 2, max: 4 },
+        need: { min: 2, max: 4 },
+        minQ: 4,
+        art: () => '',
+        world: 'sea',
+      }, spec);
+      REG.push(g); BY[g.id] = g;
+      return true;
+    },
+
+    all: () => REG.slice(),
+    get: id => BY[id] || null,
+
+    fits(item, id) {
+      const g = BY[id]; if (!g || !item) return false;
+      const n = (item.a || []).length;
+      return item.c >= 0 && item.c < n && n >= g.need.min && n <= g.need.max;
+    },
+
+    prep(items, id, seed) {
+      const g = BY[id]; if (!g) return [];
+      const ok = (items || []).filter(it => Games.fits(it, id));
+      return Games.shuffle(ok, seed);
+    },
+
+    seed(str) {
+      let h = 2166136261;
+      const t = String(str || '');
+      for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); }
+      return (h >>> 0) || 1;
+    },
+    rng(seed) {
+      let x = seed >>> 0 || 1;
+      return function () { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
+    },
+    shuffle(arr, seed) {
+      const a = (arr || []).slice(), r = Games.rng(typeof seed === 'number' ? seed : Games.seed(String(seed)));
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+      return a;
+    },
+
+    fitLine(items, id) {
+      const g = BY[id]; if (!g) return '';
+      const ready = (items || []).filter(it => it && it.c >= 0);
+      if (!ready.length) return '';
+      const n = ready.filter(it => Games.fits(it, id)).length;
+      if (n === ready.length) return 'كل أسئلتك تعمل هنا';
+       
+      const need = g.need.min === g.need.max
+        ? ('تحتاج ' + AR(g.need.min) + ' خيارات')
+        : ('تحتاج من ' + AR(g.need.min) + ' إلى ' + AR(g.need.max) + ' خيارات');
+      return AR(n) + ' من ' + AR(ready.length) + ' تعمل هنا (' + need + ')';
+    },
+
+    ready(items, id) {
+      const g = BY[id]; if (!g) return { ok: false, why: 'لعبة غير معروفة.' };
+      const n = (items || []).filter(it => Games.fits(it, id)).length;
+      if (n < g.minQ) return { ok: false, n, why: 'تحتاج ' + AR(g.minQ) + ' أسئلة على الأقل، وعندك ' + AR(n) + '.' };
+      return { ok: true, n };
+    },
+  };
+
+  const AR = n => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
+  Games.AR = AR;
+
+  Games.TEAMS = [
+    { id: 't1', name: 'اللؤلؤ', color: 'var(--sea-t1)' },
+    { id: 't2', name: 'السدو', color: 'var(--sea-t2)' },
+    { id: 't3', name: 'النخلة', color: 'var(--sea-t3)' },
+    { id: 't4', name: 'الشراع', color: 'var(--sea-t4)' },
+  ];
+  Games.teamSet = n => Games.TEAMS.slice(0, Math.max(2, Math.min(4, n | 0 || 3)))
+    .map(t => Object.assign({ score: 0 }, t));
+
+  S.games = Games;
+  if (typeof module !== 'undefined' && module.exports) module.exports = Games;
+})();
+
+</script>
+<script>
+(function () {
+  const G = (typeof window !== 'undefined' ? window : globalThis);
+  const S = G.SHIFT = G.SHIFT || {};
+  const AR = n => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const SND = 'shift.sound.v1';
+  const Sound = {
+    on: (() => { try { return localStorage.getItem(SND) !== 'off'; } catch (e) { return true; } })(),
+    cache: {},
+    set(v) {
+      Sound.on = !!v;
+      try { localStorage.setItem(SND, v ? 'on' : 'off'); }
+      catch (e) { console.warn('SHIFT: تعذّر حفظ تفضيل الصوت —', e && e.message); }
+    },
+    play(name) {
+      if (!Sound.on) return;
+      const bank = S.sfxBank; if (!bank || !bank[name]) return;
+      try {
+        let a = Sound.cache[name];
+        if (!a) { a = Sound.cache[name] = new Audio(bank[name]); }
+        a.currentTime = 0;
+        const p = a.play();
+        if (p && p.catch) p.catch(() => {});    
+      } catch (e) {}                             
+    },
+  };
+
+  const IC = {
+    exit: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/><path d="M9 8l-4 4 4 4"/><path d="M5 12h9"/></svg>',
+    tools: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>',
+    sound: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9z"/><path d="M17 9a4 4 0 010 6"/></svg>',
+    mute: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9z"/><path d="M17 10l4 4m0-4l-4 4"/></svg>',
+    again: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 19v-5h5"/></svg>',
+    swap: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3m3 3l-3 3"/><path d="M20 16H7l3-3m-3 3l3 3"/></svg>',
+  };
+
+  const score = t => ((t.score || 0) > 0 ? AR(t.score) : '—');
+
+  function verdict(teams) {
+    const ts = teams || [];
+    const top = Math.max.apply(null, ts.map(t => t.score || 0).concat([0]));
+    if (!top) return { title: 'أحسنتم', line: 'انتهت الحصة', isTop: () => false };
+    const win = ts.filter(t => (t.score || 0) === top);
+    if (win.length === 1) return { title: 'فاز فريق ' + win[0].name, line: 'أحسنتم جميعاً', isTop: t => t === win[0] };
+    if (win.length === ts.length) return { title: 'تعادل الجميع', line: 'أحسنتم جميعاً', isTop: () => true };
+    return { title: 'تعادل ' + win.map(t => t.name).join(' و'), line: 'أحسنتم جميعاً', isTop: t => win.indexOf(t) >= 0 };
+  }
+
+  function mount(opts) {
+    const root = opts.root;
+    const game = opts.game;
+    const teams = opts.teams;
+    const seed = opts.seed;
+    const onExit = opts.onExit || function () {};
+    const onAgain = opts.onAgain || function () {};
+    const onSwap = opts.onSwap || function () {};
+
+    let sheet = '';            
+    let turn = 0;
+    let done = 0, total = (opts.qs || []).length;
+    let inst = null;
+    const bye = [];
+
+    root.innerHTML =
+      '<div class="gp" data-game="' + esc(game.id) + '">' +
+        '<header class="gp-top">' +
+          '<span class="gp-step" id="gpStep"></span>' +
+          '<span class="gp-turn" id="gpTurn"></span>' +
+          '<span class="gp-gap"></span>' +
+          '<button class="gp-tool" type="button" data-a="tools">' + IC.tools + '<span>أدوات الحصة</span></button>' +
+          '<button class="gp-tool gp-tool-x" type="button" data-a="exit">' + IC.exit + '<span>خروج</span></button>' +
+        '</header>' +
+        '<main class="gp-stage" id="gpStage"></main>' +
+        '<footer class="gp-teams" id="gpTeams"></footer>' +
+        '<div class="gp-say" id="gpSay" role="status" aria-live="polite"></div>' +
+      '</div>' +
+      '<div class="gp-sheet" id="gpSheet" hidden></div>';
+
+    const $ = s => root.querySelector(s);
+    const stage = $('#gpStage'), elTeams = $('#gpTeams'), elStep = $('#gpStep'),
+          elTurn = $('#gpTurn'), elSay = $('#gpSay'), elSheet = $('#gpSheet');
+
+    function drawTop() {
+      elStep.textContent = total ? ('سؤال ' + AR(Math.min(done + 1, total)) + ' من ' + AR(total)) : '';
+      const t = teams[turn];
+      elTurn.innerHTML = t ? '<i style="background:' + t.color + '"></i>دور ' + esc(t.name) : '';
+    }
+    function drawTeams() {
+      elTeams.innerHTML = '<div class="gp-tm">' + teams.map((t, i) =>
+        '<span class="gp-team' + (i === turn ? ' now' : '') + '">' +
+          '<i style="background:' + t.color + '"></i>' +
+          '<b>' + esc(t.name) + '</b>' +
+          '<em>' + score(t) + '</em>' +
+        '</span>').join('') + '</div>';
+    }
+
+    let sayT = 0;
+    function say(text, kind) {
+      elSay.className = 'gp-say' + (kind ? ' is-' + kind : '') + (text ? ' on' : '');
+      elSay.textContent = text || '';
+      clearTimeout(sayT);
+      if (text) sayT = setTimeout(() => { elSay.classList.remove('on'); }, 1600);
+    }
+
+    function flash(kind) {
+      const el = root.querySelector('.gp');
+      if (!el) return;
+      el.classList.remove('flash-ok', 'flash-no');
+       
+      void el.offsetWidth;
+      el.classList.add(kind === 'ok' ? 'flash-ok' : 'flash-no');
+    }
+
+    function openSheet(kind) { sheet = kind; drawSheet(); }
+    function closeSheet() { sheet = ''; drawSheet(); }
+
+    function drawSheet() {
+      if (!sheet) { elSheet.hidden = true; elSheet.innerHTML = ''; return; }
+      elSheet.hidden = false;
+      if (sheet === 'tools') {
+        elSheet.innerHTML = card('أدوات الحصة', '',
+          '<button class="gp-b" type="button" data-a="sound">' + (Sound.on ? IC.sound : IC.mute) +
+            (Sound.on ? 'الصوت يعمل — اكتمه' : 'الصوت مكتوم — شغّله') + '</button>' +
+          '<button class="gp-b" type="button" data-a="again">' + IC.again + 'ابدأ اللعبة من أولها</button>' +
+          '<button class="gp-b" type="button" data-a="swap">' + IC.swap + 'بدّل اللعبة بالأسئلة نفسها</button>' +
+          '<button class="gp-b gp-b-x" type="button" data-a="close">أغلق</button>');
+      } else if (sheet === 'exit') {
+        elSheet.innerHTML = card('خروج من اللعبة',
+          'تعود إلى المدخل. الجولة الجارية تنتهي ولا تُحفظ نتيجتها — وأسئلتك المحفوظة تبقى.',
+          '<button class="gp-b gp-b-main" type="button" data-a="stay">ابقَ في اللعبة</button>' +
+          '<button class="gp-b" type="button" data-a="leave">' + IC.exit + 'اخرج إلى المدخل</button>');
+      } else if (sheet === 'win') {
+        const v = verdict(teams);
+        elSheet.innerHTML =
+          '<div class="gp-card gp-win">' +
+            '<h1>' + esc(v.title) + '</h1>' +
+            '<p class="gp-sub">' + esc(v.line) + '</p>' +
+            '<div class="gp-wt">' + teams.map(t =>
+              '<span class="gp-team' + (v.isTop(t) ? ' top' : '') + '">' +
+                '<i style="background:' + t.color + '"></i><b>' + esc(t.name) + '</b>' +
+                '<em>' + score(t) + '</em></span>').join('') + '</div>' +
+            '<div class="gp-acts">' +
+              '<button class="gp-b gp-b-main" type="button" data-a="again">' + IC.again + 'العب مرة أخرى</button>' +
+              '<button class="gp-b" type="button" data-a="swap">' + IC.swap + 'بدّل اللعبة بالأسئلة نفسها</button>' +
+              '<button class="gp-b" type="button" data-a="leave">' + IC.exit + 'خروج إلى المدخل</button>' +
+            '</div>' +
+          '</div>';
+      }
+      elSheet.querySelectorAll('[data-a]').forEach(b => { b.onclick = () => act(b.dataset.a); });
+    }
+
+    function card(title, sub, body) {
+      return '<div class="gp-card">' +
+        '<h1>' + esc(title) + '</h1>' +
+        (sub ? '<p class="gp-sub">' + esc(sub) + '</p>' : '') +
+        '<div class="gp-acts">' + body + '</div></div>';
+    }
+
+    function act(a) {
+      if (a === 'tools') return openSheet('tools');
+      if (a === 'exit') return openSheet('exit');
+      if (a === 'close' || a === 'stay') return closeSheet();
+      if (a === 'sound') { Sound.set(!Sound.on); if (Sound.on) Sound.play('pop'); return drawSheet(); }
+      if (a === 'again') { closeSheet(); return onAgain(); }
+      if (a === 'swap') { closeSheet(); return onSwap(); }
+      if (a === 'leave') { return onExit(); }
+    }
+
+    root.querySelectorAll('.gp-top [data-a]').forEach(b => { b.onclick = () => act(b.dataset.a); });
+
+    const api = {
+      el: stage,
+      qs: opts.qs || [],
+      teams: teams,
+      theme: S.theme,
+      AR: AR,
+      esc: esc,
+      rnd: S.games.rng(seed),
+      turn: () => turn,
+      setTurn(i) { turn = ((i % teams.length) + teams.length) % teams.length; drawTop(); drawTeams(); },
+      nextTurn() { api.setTurn(turn + 1); return turn; },
+      score(i, pts) {
+        const t = teams[i]; if (!t) return 0;
+        t.score = Math.max(0, (t.score || 0) + (pts | 0));
+        drawTeams(); return t.score;
+      },
+      step(d, t) { if (typeof d === 'number') done = d; if (typeof t === 'number') total = t; drawTop(); },
+       
+      judge(ok, o) {
+        o = o || {};
+        flash(ok ? 'ok' : 'no');
+        Sound.play(ok ? 'good' : 'soft');
+        if (o.say !== false) say(o.text || (ok ? 'صحيح' : 'خطأ'), ok ? 'good' : 'bad');
+        return ok;
+      },
+      say: say,
+      sfx: Sound.play,
+      sound: () => Sound.on,
+      finish() { openSheet('win'); Sound.play('win'); },
+      onDestroy(fn) { if (typeof fn === 'function') bye.push(fn); },
+    };
+
+    drawTop(); drawTeams();
+    inst = game.mount(stage, api) || {};
+
+    return {
+      destroy() {
+        try { if (inst && inst.destroy) inst.destroy(); } catch (e) { console.warn('SHIFT: تعذّر إنهاء اللعبة —', e && e.message); }
+        bye.forEach(f => { try { f(); } catch (e) {} });    
+        clearTimeout(sayT);
+        root.innerHTML = '';
+      },
+      api: api,
+    };
+  }
+
+  S.shell = { mount, verdict, Sound, IC };
+  if (typeof module !== 'undefined' && module.exports) module.exports = S.shell;
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+  const ORD = ['الأولى', 'الثانية', 'الثالثة', 'الرابعة'];
+
+  const MARK = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" ' +
+    'stroke="var(--sea-closed-mark)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M5 13l4.5 4.5L19 7"/></svg>';
+
+  const CSS = [
+    '.bd-wrap{ width:100%; flex:1 1 auto; min-height:0; display:flex; flex-direction:column; align-items:center; }',
+     
+    '.bd-grid{ width:100%; max-width:44em; flex:1 1 auto; min-height:0; display:grid;',
+    '  grid-template-columns:repeat(var(--bd-cols,4),1fr);',
+    '  grid-template-rows:auto repeat(3,minmax(44px,1fr)); gap:.4em; }',
+    '.bd-cat{ display:flex; align-items:center; justify-content:center; text-align:center;',
+    '  font-family:var(--sea-display); font-weight:800; font-size:clamp(15px,1.15em,34px); line-height:1.25;',
+    '  padding:.45em .3em; border-radius:var(--sea-r-sm); overflow-wrap:anywhere;',
+    '  background:var(--sea-head); color:var(--sea-white); }',
+    '.bd-tile{ font:inherit; font-family:var(--sea-display); font-weight:800;',
+    '  font-size:clamp(17px,1.5em,44px); line-height:1; min-height:44px; padding:.1em;',
+    '  display:grid; place-items:center; cursor:pointer;',
+    '  background:var(--sea-white); color:var(--sea-coral);',
+    '  border:var(--sea-bd) solid var(--sea-ink); border-radius:var(--sea-r-sm);',
+    '  box-shadow:0 4px 0 var(--sea-ink); }',
+    '.bd-tile:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--sea-ink); }',
+     
+    '.bd-tile[data-x="1"]{ background:var(--sea-sun); color:var(--sea-ink); }',
+    '.bd-tile[data-off="1"]{ background:var(--sea-closed); color:var(--sea-closed-mark);',
+    '  box-shadow:none; cursor:default; transform:none; }',
+    '.bd-tile[data-off="1"] svg{ width:1.1em; height:1.1em; display:block; }',
+    '@media (prefers-reduced-motion: reduce){ .bd-tile:active{ transform:none; } }',
+     
+    '.bd-line{ flex:none; display:flex; flex-wrap:wrap; align-items:center;',
+    '  justify-content:center; gap:.45em; }',
+     
+    '.bd-ask{ width:100%; flex:0 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;',
+    '  display:flex; flex-direction:column; align-items:center; gap:.5em; }',
+     
+    '@media (max-height:460px){',
+    '  .gp[data-game="board"] .gw-q{ font-size:clamp(17px,1.25em,36px); }',
+    '  .gp[data-game="board"] .gw-opts{ display:grid; grid-template-columns:1fr 1fr;',
+    '    align-content:start; }',
+    '  .gp[data-game="board"] .bd-grid{ gap:.3em; }',
+    '  .gp[data-game="board"] .bd-cat{ font-size:clamp(15px,1.15em,34px); padding:.3em .25em; }',
+    '  .gp[data-game="board"] .bd-wrap{ overflow-y:auto; }',
+    '}',
+  ].join('\n');
+
+  function style() {
+    if (typeof document === 'undefined' || document.getElementById('css-board')) return;
+    const st = document.createElement('style');
+    st.id = 'css-board';
+    st.textContent = CSS;
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    id: 'board',
+    name: 'لوحة المسابقة',
+    line: 'فئات ونقاط على لوحة، والفريق يختار مربّعه ويخاطر.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'آخر مربّعين نقاطهما مضاعفة',
+
+    art() {
+      const XS = [13, 37, 61, 85], YS = [29, 42, 55];
+      let t = '';
+      for (let c = 0; c < 4; c++) {
+        for (let r = 0; r < 3; r++) {
+          const k = c + ',' + r;
+          const f = (k === '0,0' || k === '2,1') ? 'var(--sea-closed)'
+            : (k === '3,2' ? 'var(--sea-sun)' : 'var(--sea-sand)');
+          t += '<rect x="' + XS[c] + '" y="' + YS[r] + '" width="20" height="10" rx="4" ' +
+            'fill="' + f + '" stroke="var(--sea-ink)" stroke-width="2"/>';
+        }
+      }
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="11" y="15" width="106" height="58" rx="9" fill="var(--sea-ink)"/>' +
+        '<rect x="6" y="10" width="106" height="58" rx="9" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="13" y="16" width="92" height="9" rx="4.5" fill="var(--sea-head)"/>' +
+        t + '</svg>';
+    },
+
+    mount(el, api) {
+      style();
+
+      const cols = Math.min(4, Math.max(2, Math.floor(api.qs.length / 3)));
+      const tiles = [];
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < 3; r++) {
+          const q = api.qs[c * 3 + r];
+           
+          tiles.push({ c: c, r: r, pts: r + 1, val: r + 1, q: q || null, off: !q });
+        }
+      }
+      const total = tiles.filter(t => t.q).length;
+      const live = () => tiles.filter(t => t.q && !t.off).length;
+      const dbl = () => live() <= 2;
+
+      let open = null, locked = false, timer = 0;
+
+      function pts(v) {
+        if (v === 1) return 'نقطة';
+        if (v === 2) return 'نقطتان';
+        return api.AR(v) + ' نقاط';
+      }
+
+      function board() {
+        open = null;
+        api.step(total - live(), total);
+        if (!live()) return api.finish();
+
+        const x2 = dbl();
+        let h = '<div class="bd-line">' +
+            (x2 ? '<p class="gw-tag">آخر مربّعين — نقاطهما مضاعفة</p>' : '') +
+            '<p class="gw-head">دور ' + api.esc(api.teams[api.turn()].name) + ' — اختر مربّعاً</p>' +
+          '</div>' +
+          '<div class="bd-wrap"><div class="bd-grid" style="--bd-cols:' + cols + '">';
+
+        for (let c = 0; c < cols; c++) h += '<div class="bd-cat">المجموعة ' + ORD[c] + '</div>';
+
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < cols; c++) {
+            const t = tiles[c * 3 + r];
+            if (!t.q) { h += '<span></span>'; continue; }
+            if (t.off) { h += '<span class="bd-tile" data-off="1">' + MARK + '</span>'; continue; }
+            const v = t.pts * (x2 ? 2 : 1);
+            h += '<button class="bd-tile" type="button" data-i="' + (c * 3 + r) + '"' +
+              (x2 ? ' data-x="1"' : '') +
+              ' aria-label="المجموعة ' + ORD[c] + ' — ' + pts(v) + '">' + api.AR(v) + '</button>';
+          }
+        }
+        h += '</div></div>';
+        el.innerHTML = h;
+        el.querySelectorAll('[data-i]').forEach(b => { b.onclick = () => pickTile(+b.dataset.i); });
+      }
+
+      function pickTile(i) {
+        if (locked) return;
+        const t = tiles[i];
+        if (!t || t.off || !t.q) return;
+         
+        t.val = t.pts * (dbl() ? 2 : 1);
+        open = t;
+        api.sfx('pop');
+        ask();
+      }
+
+      function ask() {
+        const t = open, q = t.q;
+         
+        el.innerHTML =
+          '<div class="bd-ask">' +
+            '<div class="bd-line">' +
+              (t.val > t.pts ? '<p class="gw-tag">آخر مربّعين — نقاطهما مضاعفة</p>' : '') +
+              '<p class="gw-sub">المجموعة ' + ORD[t.c] + ' — ' + pts(t.val) + '</p>' +
+            '</div>' +
+            '<h2 class="gw-q">' + api.esc(q.q) + '</h2>' +
+            '<div class="gw-opts">' + q.a.map((x, k) =>
+              '<button class="gw-opt" type="button" data-k="' + k + '">' +
+                '<span class="k">' + (KEY[k] || '') + '</span><span>' + api.esc(x) + '</span>' +
+              '</button>').join('') + '</div>' +
+          '</div>';
+        el.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => choose(+b.dataset.k); });
+      }
+
+      function choose(k) {
+        if (locked || !open) return;
+        locked = true;
+        const t = open, q = t.q, ok = k === q.c;
+        el.querySelectorAll('.gw-opt').forEach((b, x) => {
+          b.disabled = true;
+          if (x === q.c) b.dataset.st = 'ok';
+          else if (x === k) b.dataset.st = 'no';
+        });
+        if (ok) api.score(api.turn(), t.val);
+        api.judge(ok, { text: ok ? ('صحيح — ' + pts(t.val)) : 'خطأ — لا نقاط' });
+        timer = setTimeout(() => {
+          locked = false;
+           
+          t.off = true;
+          api.nextTurn();
+          board();
+        }, 1500);
+      }
+
+      board();
+      return { destroy() { locked = true; clearTimeout(timer); } };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+
+  const PTS = n => (n >= 3 && n <= 10 ? ' نقاط' : ' نقطة');
+
+  function closed() {
+    return '<svg viewBox="0 0 100 86" aria-hidden="true">' +
+      '<path d="M9,54 C9,26 97,26 97,54 C97,78 9,78 9,54 Z" fill="var(--sea-ink)"/>' +
+      '<path d="M6,50 C6,74 94,74 94,50 Z" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+      '<path d="M6,50 C6,22 94,22 94,50 Z" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+      '<g stroke="var(--sea-closed-mark)" stroke-width="2.5" stroke-linecap="round">' +
+        '<path d="M50,49 L26,44"/><path d="M50,49 L35,33"/><path d="M50,49 L50,28"/>' +
+        '<path d="M50,49 L65,33"/><path d="M50,49 L74,44"/>' +
+      '</g>' +
+      '<path d="M6,50 L94,50" stroke="var(--sea-ink)" stroke-width="3" stroke-linecap="round"/>' +
+      '</svg>';
+  }
+
+  function bead(kind) {
+    if (kind === 'dana') {
+      return '<circle cx="50" cy="50" r="15" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<circle cx="44" cy="44" r="4" fill="var(--sea-white)"/>';
+    }
+    if (kind === 'pearl') {
+      return '<circle cx="50" cy="52" r="9" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<circle cx="46" cy="48" r="2.5" fill="var(--sea-sand)"/>';
+    }
+    return '<circle cx="50" cy="52" r="15" fill="var(--sea-t4)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+      '<g fill="none" stroke="var(--sea-white)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M41,47 L57,47"/><path d="M53,43 L57,47 L53,51"/>' +
+        '<path d="M59,57 L43,57"/><path d="M47,53 L43,57 L47,61"/>' +
+      '</g>';
+  }
+
+  function opened(kind) {
+    return '<svg viewBox="0 0 100 86" aria-hidden="true">' +
+      '<path d="M9,58 C9,82 97,82 97,58 Z" fill="var(--sea-ink)"/>' +
+      '<g transform="rotate(-24 6 54)">' +
+        '<path d="M6,54 C6,26 94,26 94,54 Z" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<g stroke="var(--sea-closed-mark)" stroke-width="2.5" stroke-linecap="round">' +
+          '<path d="M50,53 L30,48"/><path d="M50,53 L38,38"/><path d="M50,53 L62,38"/><path d="M50,53 L70,48"/>' +
+        '</g>' +
+      '</g>' +
+      bead(kind) +
+      '<path d="M6,54 C6,78 94,78 94,54 Z" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+      '<path d="M14,58 C16,70 84,70 86,58" fill="none" stroke="var(--sea-sand)" stroke-width="4" stroke-linecap="round"/>' +
+      '</svg>';
+  }
+
+  function css() {
+    if (typeof document === 'undefined' || document.getElementById('css-oyster')) return;
+    const s = document.createElement('style');
+    s.id = 'css-oyster';
+    s.textContent = [
+      '.oy-row{ width:min(34em,100%); display:flex; flex-wrap:nowrap; justify-content:center;',
+      '  align-items:flex-end; gap:.5em; }',
+      '.oy{ font:inherit; flex:1 1 0; min-width:0; max-width:min(11em,30vh);',
+      '  min-height:max(44px,5em); padding:.4em .3em; cursor:pointer;',
+      '  display:flex; flex-direction:column; align-items:center; gap:.2em;',
+      '  background:var(--sea-white); color:var(--sea-ink);',
+      '  border:var(--sea-bd) solid var(--sea-ink); border-radius:var(--sea-r);',
+      '  box-shadow:0 4px 0 var(--sea-ink); }',
+      '.oy:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--sea-ink); }',
+      '.oy[disabled]{ cursor:default; }',
+      '.oy svg{ width:100%; height:auto; display:block; }',
+      '.oy b{ font-family:var(--sea-display); font-weight:800; font-size:.72em;',
+      '  line-height:1.2; text-align:center; white-space:nowrap; }',
+      '.oy[data-st="pick"]{ background:var(--sea-sun); }',
+      '.oy[data-st="miss"]{ opacity:.55; box-shadow:none; }',
+       
+      '@media (max-height:460px){',
+      '  .oy{ max-width:min(11em,22vh); min-height:44px; padding:.25em; gap:.1em; }',
+      '  .oy svg{ max-height:16vh; }',
+      '  .oy b{ font-size:.66em; }',
+      '}',
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+
+  S.games.define({
+    id: 'oyster',
+    name: 'المحار',
+    line: 'أجب صحيحاً، ثم افتح محارة: دانة أو لؤلؤة أو تبديل مراكز.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 5,
+    comeback: 'محارة التبديل تقلب نقاط المتصدّر والأخير',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="10" width="108" height="58" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<path d="M16,52 C16,62 42,62 42,52 Z" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M16,52 C16,40 42,40 42,52 Z" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M78,52 C78,62 104,62 104,52 Z" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M78,52 C78,40 104,40 104,52 Z" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<g transform="rotate(-24 48 54)">' +
+          '<path d="M48,54 C48,40 72,40 72,54 Z" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '</g>' +
+        '<circle cx="60" cy="50" r="8" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M48,54 C48,66 72,66 72,54 Z" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      css();
+      let i = 0, locked = false, gone = false;
+      const timers = [];
+       
+      function wait(ms, fn) { timers.push(setTimeout(() => { if (!gone) fn(); }, ms)); }
+
+      function ranks() {
+        let hi = 0, lo = 0;
+        api.teams.forEach((t, k) => {
+          if ((t.score || 0) > (api.teams[hi].score || 0)) hi = k;
+          if ((t.score || 0) < (api.teams[lo].score || 0)) lo = k;
+        });
+        return { hi: hi, lo: lo, gap: (api.teams[hi].score || 0) - (api.teams[lo].score || 0) };
+      }
+
+      function fill() {
+        const r = ranks();
+        const armed = r.gap >= 3;
+        const slots = armed
+          ? ['dana', 'pearl', 'swap']
+          : (api.rnd() < 0.35 ? ['dana', 'dana', 'pearl'] : ['dana', 'pearl', 'pearl']);
+        for (let k = slots.length - 1; k > 0; k--) {
+          const j = Math.floor(api.rnd() * (k + 1));
+          const t = slots[k]; slots[k] = slots[j]; slots[j] = t;
+        }
+        return { slots: slots, armed: armed, gap: r.gap };
+      }
+
+      function ask() {
+        const q = api.qs[i];
+        if (!q) return api.finish();
+        api.step(i, api.qs.length);
+        el.innerHTML =
+          '<h2 class="gw-q">' + api.esc(q.q) + '</h2>' +
+          '<div class="gw-opts">' + q.a.map((t, k) =>
+            '<button class="gw-opt" type="button" data-k="' + k + '">' +
+              '<span class="k">' + (KEY[k] || '') + '</span><span>' + api.esc(t) + '</span>' +
+            '</button>').join('') + '</div>';
+        el.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => answer(+b.dataset.k); });
+      }
+
+      function answer(k) {
+        if (locked) return;
+        locked = true;
+        const q = api.qs[i], ok = k === q.c;
+        el.querySelectorAll('.gw-opt').forEach((b, n) => {
+          b.disabled = true;
+          if (n === q.c) b.dataset.st = 'ok';
+          else if (n === k) b.dataset.st = 'no';
+        });
+        if (ok) api.score(api.turn(), 1);
+        api.judge(ok, { text: ok ? 'صحيح — لك محارة' : 'خطأ' });
+         
+        wait(1300, () => { if (ok) board(); else step(); });
+      }
+
+      function board() {
+        const F = fill();
+        el.innerHTML =
+          '<p class="gw-head">إجابة صحيحة — افتح محارة</p>' +
+          (F.armed
+            ? '<p class="gw-tag">محارة التبديل في اللوح — الفارق ' + api.AR(F.gap) + PTS(F.gap) + '</p>'
+            : '') +
+          '<div class="oy-row">' + F.slots.map((s, k) =>
+            '<button class="oy" type="button" data-o="' + k + '">' +
+              closed() + '<b>محارة ' + api.AR(k + 1) + '</b>' +
+            '</button>').join('') + '</div>' +
+          '<p class="gw-sub">المس محارة واحدة لفريقك</p>';
+        locked = false;
+        el.querySelectorAll('[data-o]').forEach(b => { b.onclick = () => pick(F, +b.dataset.o); });
+      }
+
+      function apply(kind) {
+        const me = api.turn();
+        if (kind === 'dana') { api.score(me, 3); return { text: 'دانة كبيرة — ' + api.AR(3) + PTS(3), tag: '' }; }
+        if (kind === 'pearl') { api.score(me, 1); return { text: 'لؤلؤة صغيرة — نقطة واحدة', tag: '' }; }
+        const r = ranks();
+         
+        if (r.gap <= 0) { api.score(me, 1); return { text: 'النقاط متساوية فلا تبديل — لك لؤلؤة', tag: '' }; }
+        const hiS = api.teams[r.hi].score || 0, loS = api.teams[r.lo].score || 0;
+        api.score(r.hi, loS - hiS);
+        api.score(r.lo, hiS - loS);
+        return {
+          text: 'تبديل المراكز',
+          tag: 'تبديل المراكز: ' + api.esc(api.teams[r.hi].name) + ' و' +
+               api.esc(api.teams[r.lo].name) + ' تبادلا نقاطهما',
+        };
+      }
+
+      function pick(F, n) {
+        if (locked) return;
+        locked = true;
+        const got = apply(F.slots[n]);
+        api.sfx(F.slots[n] === 'dana' ? 'good' : F.slots[n] === 'swap' ? 'turn' : 'pop');
+        api.say(got.text, 'good');
+         
+        el.innerHTML =
+          '<p class="gw-head">' + api.esc(got.text) + '</p>' +
+          (got.tag ? '<p class="gw-tag">' + got.tag + '</p>' : '') +
+          '<div class="oy-row">' + F.slots.map((s, k) =>
+            '<button class="oy" type="button" disabled data-st="' + (k === n ? 'pick' : 'miss') + '">' +
+              opened(s) + '<b>' + (s === 'dana' ? 'دانة' : s === 'pearl' ? 'لؤلؤة' : 'تبديل') + '</b>' +
+            '</button>').join('') + '</div>';
+        wait(2000, step);
+      }
+
+      function step() {
+        locked = false;
+        i++;
+        api.nextTurn();
+        if (i >= api.qs.length) { api.step(api.qs.length, api.qs.length); return api.finish(); }
+        ask();
+      }
+
+      ask();
+      return {
+        destroy() {
+          gone = true; locked = true;
+          timers.forEach(clearTimeout);
+          timers.length = 0;
+        },
+      };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+  const WIN = 5;         
+  const STEP = 14;       
+  const BACK = 3;        
+  const WAIT = 1500;     
+  const INK = 'var(--sea-ink)';
+
+  const CSS_ID = 'css-tug';
+  const CSS = [
+    '.tug{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;',
+    'align-items:center;justify-content:center;gap:.55em}',
+    '.tug-l,.tug-r{display:flex;flex-direction:column;align-items:center;min-width:0;width:100%}',
+    '.tug-l{gap:.3em}.tug-r{gap:.45em}',
+     
+    '.tug-b{flex:0 1 auto;width:100%;height:clamp(72px,16.5vh,190px);min-height:0}',
+    '.tug-b svg{width:100%;height:100%;display:block}',
+    '.tug-mark{transition:transform .42s cubic-bezier(.2,.9,.3,1)}',
+    '.tug[data-turn="0"] .tug-now[data-t="0"],.tug[data-turn="1"] .tug-now[data-t="1"]{opacity:1}',
+    '@media (prefers-reduced-motion:reduce){.tug-mark{transition:none}}',
+     
+    '@media (max-height:560px) and (min-width:600px){',
+    '.tug{flex-direction:row;gap:.7em}',
+    '.tug-l{flex:1 1 42%}.tug-r{flex:1 1 58%}',
+    '.tug-b{height:clamp(84px,38vh,200px)}',
+    '.tug-o{display:grid;grid-template-columns:1fr 1fr}}',
+  ].join('');
+
+  function style() {
+    if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return;
+    const s = document.createElement('style');
+    s.id = CSS_ID;
+    s.textContent = CSS;
+    document.head.appendChild(s);
+  }
+
+  function puller(cx, color, f, t) {
+     
+    return '<g>' +
+      '<path d="M' + (cx - 4) + ' 62L' + (cx - 7) + ' 74" fill="none" stroke="' + INK + '" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path d="M' + (cx + 4) + ' 62L' + (cx + 7) + ' 74" fill="none" stroke="' + INK + '" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<rect x="' + (cx - 7) + '" y="40" width="14" height="24" rx="6" fill="' + color + '" stroke="' + INK + '" stroke-width="2.6"/>' +
+      '<path d="M' + (cx - f * 5) + ' 47L' + (cx - f * 13) + ' 46" fill="none" stroke="' + INK + '" stroke-width="3.4" stroke-linecap="round"/>' +
+      '<circle cx="' + cx + '" cy="31" r="7" fill="' + color + '" stroke="' + INK + '" stroke-width="2.6"/>' +
+       
+      '<circle class="tug-now" data-t="' + t + '" cx="' + cx + '" cy="86" r="4.2" fill="var(--sea-sun)" stroke="' + INK + '" stroke-width="2" opacity="0"/>' +
+      '</g>';
+  }
+
+  function board(right, left) {
+    let ticks = '';
+    for (let k = -WIN; k <= WIN; k++) {
+      const x = 100 + k * STEP;
+      if (k === -WIN || k === WIN) {
+        ticks += '<circle cx="' + x + '" cy="84" r="3.6" fill="' + (k > 0 ? right : left) +
+          '" stroke="' + INK + '" stroke-width="2"/>';
+      } else {
+        ticks += '<circle cx="' + x + '" cy="84" r="' + (k === 0 ? 2.8 : 1.9) + '" fill="var(--sea-sub)"/>';
+      }
+    }
+    return '<svg viewBox="0 0 200 96" aria-hidden="true">' +
+      '<rect x="6" y="72" width="188" height="3.5" rx="1.75" fill="' + INK + '"/>' +
+      ticks +
+      '<rect x="86" y="63" width="28" height="9" rx="4.5" fill="var(--sea-teal)" stroke="' + INK + '" stroke-width="2.4"/>' +
+      '<rect x="24" y="43" width="152" height="6" rx="3" fill="var(--sea-white)" stroke="' + INK + '" stroke-width="2.6"/>' +
+      puller(188, right, 1, '0') +
+      puller(12, left, -1, '1') +
+      '<g class="tug-mark">' +
+        '<rect x="90.5" y="12.5" width="22" height="15" rx="6" fill="' + INK + '"/>' +
+        '<rect x="88" y="10" width="22" height="15" rx="6" fill="var(--sea-sun)" stroke="' + INK + '" stroke-width="2.6"/>' +
+        '<rect x="98.6" y="22" width="2.8" height="52" rx="1.4" fill="' + INK + '"/>' +
+        '<circle cx="100" cy="46" r="6.5" fill="var(--sea-coral)" stroke="' + INK + '" stroke-width="2.6"/>' +
+      '</g>' +
+      '</svg>';
+  }
+
+  S.games.define({
+    id: 'tug',
+    name: 'شدّ الحبل',
+    line: 'حبلٌ بين ناحيتين، وكل إجابة صحيحة تسحبه خطوة.',
+    mins: [8, 12],
+    teams: { min: 2, max: 4 },         
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'المتأخّر بثلاث خطوات يسحب خطوتين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="8" y="62" width="104" height="4" rx="2" fill="var(--sea-ink)"/>' +
+        '<rect x="10" y="36" width="100" height="6" rx="3" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="14" y="32" width="14" height="22" rx="6" fill="var(--sea-t2)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<circle cx="21" cy="20" r="8" fill="var(--sea-t2)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="92" y="32" width="14" height="22" rx="6" fill="var(--sea-t1)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<circle cx="99" cy="20" r="8" fill="var(--sea-t1)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="56" y="16" width="10" height="46" rx="5" fill="var(--sea-ink)"/>' +
+        '<circle cx="60" cy="39" r="9" fill="var(--sea-coral)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      style();
+      const AR = api.AR;
+      const T = api.teams;
+       
+      const dir = t => (t % 2 === 0 ? 1 : -1);
+       
+      const sideOf = d => T.map((t, k) => k).filter(k => dir(k) === d);
+       
+      const label = d => {
+        const ns = sideOf(d).map(k => T[k].name);
+        return ns.length === 1 ? 'فريق ' + ns[0] : 'ناحية ' + ns.join(' و');
+      };
+      const right = label(1), left = label(-1);
+
+      let i = 0, pos = 0, locked = false, over = false, tid = 0;
+      const after = (fn, ms) => { clearTimeout(tid); tid = setTimeout(fn, ms); };
+
+      const word = n => (n === 1 ? 'خطوة واحدة' : n === 2 ? 'خطوتان' : AR(n) + ' خطوات');
+       
+      const lag = t => Math.max(0, dir(t) === 1 ? -pos : pos);
+      const gain = t => (lag(t) >= BACK ? 2 : 1);
+
+      el.innerHTML =
+        '<div class="tug" data-turn="0">' +
+          '<div class="tug-l">' +
+            '<div class="tug-b">' + board(api.esc(T[0].color), api.esc(T[1].color)) + '</div>' +
+            '<p class="gw-sub tug-st"></p>' +
+          '</div>' +
+          '<div class="tug-r"></div>' +
+        '</div>';
+
+      const wrap = el.querySelector('.tug');
+      const mark = el.querySelector('.tug-mark');
+      const st = el.querySelector('.tug-st');
+      const side = el.querySelector('.tug-r');
+
+      function paint() {
+        mark.style.transform = 'translateX(' + (pos * STEP) + 'px)';
+        const n = Math.abs(pos);
+        const who = pos > 0 ? right : left;
+        st.textContent = !n ? 'الحبل في المنتصف'
+          : n >= WIN ? 'الحبل كامله مع ' + who
+          : 'الحبل مع ' + who + '، وتبقّى ' + word(WIN - n);
+      }
+
+      function drawQ() {
+        const q = api.qs[i];
+        if (!q) return end();
+        const t = api.turn();
+        api.step(i, api.qs.length);
+        wrap.dataset.turn = String(t % 2);
+        const dot = el.querySelector('.tug-now[data-t="' + (t % 2) + '"]');
+        if (dot) dot.setAttribute('fill', T[t].color);
+        side.innerHTML =
+          (gain(t) > 1
+            ? '<p class="gw-tag">سحبة العودة — إجابة فريق ' + api.esc(T[t].name) + ' الصحيحة تسحب خطوتين</p>'
+            : '') +
+          '<h2 class="gw-q">' + api.esc(q.q) + '</h2>' +
+          '<div class="gw-opts tug-o">' + q.a.map((x, k) =>
+            '<button class="gw-opt" type="button" data-k="' + k + '">' +
+              '<span class="k">' + (KEY[k] || '') + '</span><span>' + api.esc(x) + '</span>' +
+            '</button>').join('') + '</div>';
+        side.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => choose(+b.dataset.k); });
+      }
+
+      function choose(k) {
+        if (locked || over) return;
+        locked = true;
+        const q = api.qs[i], t = api.turn(), ok = k === q.c;
+        side.querySelectorAll('.gw-opt').forEach((b, n) => {
+          b.disabled = true;
+          if (n === q.c) b.dataset.st = 'ok';
+          else if (n === k) b.dataset.st = 'no';
+        });
+
+        let got = 0;
+        if (ok) {
+          const to = Math.max(-WIN, Math.min(WIN, pos + dir(t) * gain(t)));
+          got = Math.abs(to - pos);
+          pos = to;
+           
+          if (got) sideOf(dir(t)).forEach(ti => api.score(ti, got));
+          paint();
+        }
+        api.judge(ok, { text: ok ? (got > 1 ? 'صحيح — خطوتان' : 'صحيح — خطوة') : 'خطأ — الحبل مكانه' });
+
+        if (Math.abs(pos) >= WIN) {
+          over = true;
+          api.step(api.qs.length, api.qs.length);
+          api.say('الحبل كامله مع ' + (pos > 0 ? right : left), 'good');
+          return after(() => api.finish(), WAIT);
+        }
+        after(() => {
+          locked = false; i++; api.nextTurn();
+          if (i >= api.qs.length) return end();
+          drawQ();
+        }, WAIT);
+      }
+
+      function end() {
+        over = true;
+        api.step(api.qs.length, api.qs.length);
+        api.finish();
+      }
+
+      paint();
+      drawQ();
+
+      return { destroy() { locked = true; over = true; clearTimeout(tid); } };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+
+  const GOAL = 10;           
+  const W = 124;             
+  const PAD = 5;             
+  const LANE = 16;           
+  const X0 = 107;            
+  const X1 = 16;             
+  const DX = (X0 - X1) / GOAL;
+
+  function css() {
+    if (typeof document === 'undefined' || document.getElementById('css-race')) return;
+    const st = document.createElement('style');
+    st.id = 'css-race';
+    st.textContent =
+      '.rc{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:.5em}' +
+       
+      '.rc-track{width:100%;flex:1 1 0;min-height:3em;display:grid;place-items:stretch}' +
+      '.rc-track svg{width:100%;height:100%;display:block}' +
+      '.rc-ask{flex:0 0 auto;width:min(34em,100%);display:flex;flex-direction:column;' +
+      'align-items:center;gap:.35em}' +
+      '.rc-tags{display:flex;flex-direction:column;align-items:center;gap:.3em}' +
+      '.rc-tags:empty{display:none}' +
+       
+      '.rc-q{font-size:clamp(16px,1.6em,34px)}' +
+      '.rc .gw-opt{font-size:clamp(16px,1.15em,34px)}' +
+       
+      '@media (min-width:900px) and (min-height:560px){' +
+      '.rc .gw-opts{flex-direction:row;width:min(46em,100%)}' +
+      '.rc .gw-opt{flex:1 1 0;min-width:0;justify-content:center;text-align:center}}' +
+      '.rc-track{min-height:5em}' +
+      '.rc-run{transition:transform .38s ease}' +
+       
+      '@media (max-height:560px) and (min-width:660px){' +
+      '.rc{flex-direction:row;align-items:stretch;gap:.6em}' +
+      '.rc-track{flex:1 1 46%}' +
+      '.rc-ask{flex:1 1 54%;width:auto;justify-content:center}}' +
+      '@media (prefers-reduced-motion:reduce){.rc-run{transition:none}}';
+    document.head.appendChild(st);
+  }
+
+  S.games.define({
+    id: 'race',
+    name: 'السباق',
+    line: 'كل فريق عدّاء على مساره، والإجابة الصحيحة تقدّمه خطوة.',
+    mins: [8, 12],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'المتأخّر يأخذ خطوة مجانية كل جولتين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="10" width="108" height="58" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="14" y="19" width="92" height="12" rx="6" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '<rect x="14" y="34" width="92" height="12" rx="6" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '<rect x="14" y="49" width="92" height="12" rx="6" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '<rect x="20" y="19" width="6" height="42" fill="var(--sea-ink)"/>' +
+        '<rect x="26" y="19" width="6" height="7" fill="var(--sea-white)"/>' +
+        '<rect x="26" y="33" width="6" height="7" fill="var(--sea-white)"/>' +
+        '<rect x="26" y="47" width="6" height="7" fill="var(--sea-white)"/>' +
+        '<circle cx="92" cy="25" r="5" fill="var(--sea-t1)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '<circle cx="80" cy="40" r="5" fill="var(--sea-t2)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '<circle cx="62" cy="55" r="5" fill="var(--sea-t3)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      css();
+
+      const N = api.teams.length;
+      const H = PAD * 2 + N * LANE;
+      const pos = api.teams.map(() => 0);    
+      const hot = api.teams.map(() => 0);    
+      const timers = [];
+
+      let i = 0, locked = false, turns = 0, freeNow = false;
+
+      const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+      const xAt = p => +(X0 - p * DX).toFixed(2);
+      const laneTop = k => PAD + k * LANE + 1;    
+
+      function dist(x) {
+        if (x === 1) return 'خطوة واحدة';
+        if (x === 2) return 'خطوتان';
+        return api.AR(x) + ' خطوات';
+      }
+
+      function runner(color) {
+        return '<path d="M-1.3 0 L0 -2.4 L1.3 0" fill="none" stroke="var(--sea-ink)" ' +
+                 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+                
+               '<circle cx="1.4" cy="-7.9" r="2.4" fill="var(--sea-ink)"/>' +
+               '<rect x="-1" y="-5.6" width="4.8" height="5" rx="2.4" fill="var(--sea-ink)"/>' +
+               '<rect x="-2.4" y="-7.1" width="4.8" height="5" rx="2.4" fill="' + color + '" ' +
+                 'stroke="var(--sea-ink)" stroke-width="1.6"/>' +
+               '<circle cx="0" cy="-9.4" r="2.4" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="1.6"/>';
+      }
+
+      function track() {
+        let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" ' +
+                'aria-label="مضمار السباق: لكل فريق مسار، وخطّ النهاية إلى اليسار">';
+         
+        for (let k = 0; k < N; k++) {
+          const y = laneTop(k), cy = y + 7;
+          s += '<rect x="6" y="' + y + '" width="108" height="14" rx="5" ' +
+               'fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2"/>';
+          for (let st = 1; st < GOAL; st++) {
+            s += '<circle cx="' + xAt(st) + '" cy="' + cy + '" r="0.9" fill="var(--sea-sand)"/>';
+          }
+          s += '<circle cx="118" cy="' + cy + '" r="4" fill="' + api.esc(api.teams[k].color) +
+               '" stroke="var(--sea-ink)" stroke-width="2"/>';
+        }
+         
+        for (let c = 0; c < 2; c++) {
+          for (let r = 0; r < N * 4; r++) {
+            const f = (c + r) % 2 ? 'var(--sea-white)' : 'var(--sea-ink)';
+            s += '<rect x="' + (12 + c * 4) + '" y="' + (PAD + r * 4) + '" width="4" height="4" fill="' + f + '"/>';
+          }
+        }
+        s += '<rect x="12" y="' + PAD + '" width="8" height="' + (N * LANE) + '" fill="none" ' +
+             'stroke="var(--sea-ink)" stroke-width="1.6"/>';
+         
+        for (let k = 0; k < N; k++) {
+          s += '<g class="rc-run" data-r="' + k + '" style="transform:translate(' + xAt(0) +
+               'px,' + (laneTop(k) + 13) + 'px)">' + runner(api.esc(api.teams[k].color)) + '</g>';
+        }
+        return s + '</svg>';
+      }
+
+      el.innerHTML =
+        '<div class="rc">' +
+          '<div class="rc-track" id="rcTrack">' + track() + '</div>' +
+          '<div class="rc-ask">' +
+            '<div class="rc-tags" id="rcTags"></div>' +
+            '<h2 class="gw-q rc-q" id="rcQ"></h2>' +
+            '<div class="gw-opts" id="rcOpts"></div>' +
+          '</div>' +
+        '</div>';
+
+      const $ = s => el.querySelector(s);
+      const elTags = $('#rcTags'), elQ = $('#rcQ'), elOpts = $('#rcOpts');
+      const runs = [];
+      el.querySelectorAll('[data-r]').forEach(g => { runs[+g.dataset.r] = g; });
+
+      function place(k) {
+        const g = runs[k]; if (!g) return;
+        g.style.transform = 'translate(' + xAt(pos[k]) + 'px,' + (laneTop(k) + 13) + 'px)';
+      }
+
+      function bump(k, n) {
+        const add = Math.min(GOAL, pos[k] + n) - pos[k];
+        if (add <= 0) return;
+        pos[k] += add;
+        api.score(k, add);
+        place(k);
+      }
+
+      function behind(k) {
+        const lo = Math.min.apply(null, pos);
+        const hi = Math.max.apply(null, pos);
+        return pos[k] === lo && hi > lo;
+      }
+
+      function tags() {
+        const cur = api.turn();
+        const rem = GOAL - Math.max.apply(null, pos.concat([0]));
+        let h = '';
+        if (freeNow) h += '<p class="gw-tag">خطوة مجانية للفريق المتأخّر</p>';
+        if (hot[cur] >= 2) {
+          h += '<p class="gw-tag">سرعة مضاعفة — خطوتان لفريق ' + api.esc(api.teams[cur].name) + '</p>';
+        }
+        if (rem > 0 && rem <= 4) {
+          h += '<p class="gw-sub">المتصدّر على بُعد ' + dist(rem) + ' من خطّ النهاية</p>';
+        }
+        elTags.innerHTML = h;
+      }
+
+      function draw() {
+        const q = api.qs[i];
+        if (!q) return api.finish();
+        api.step(i, api.qs.length);
+        elQ.innerHTML = api.esc(q.q);
+        elOpts.innerHTML = q.a.map((t, k) =>
+          '<button class="gw-opt" type="button" data-k="' + k + '">' +
+            '<span class="k">' + (KEY[k] || '') + '</span><span>' + api.esc(t) + '</span>' +
+          '</button>').join('');
+        elOpts.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => choose(+b.dataset.k); });
+      }
+
+      function begin() {
+        turns++;
+        freeNow = false;
+        const cur = api.turn();
+        const round = Math.ceil(turns / N);
+        if (round % 2 === 0 && pos[cur] < GOAL && behind(cur)) {
+          freeNow = true;
+          bump(cur, 1);
+          api.sfx('pop');
+        }
+         
+        tags();
+        if (pos[cur] >= GOAL) return win(cur);
+        draw();
+      }
+
+      function choose(k) {
+        if (locked) return;
+        locked = true;
+        const q = api.qs[i], cur = api.turn(), ok = k === q.c;
+        const n = hot[cur] >= 2 ? 2 : 1;
+        elOpts.querySelectorAll('.gw-opt').forEach((b, m) => {
+          b.disabled = true;
+          if (m === q.c) b.dataset.st = 'ok';
+          else if (m === k) b.dataset.st = 'no';
+        });
+        if (ok) { hot[cur]++; bump(cur, n); } else { hot[cur] = 0; }
+        api.judge(ok, { text: ok ? (n > 1 ? 'صحيح — خطوتان' : 'صحيح') : 'خطأ' });
+        later(() => {
+          locked = false; i++;
+          if (pos[cur] >= GOAL) return win(cur);
+          api.step(i, api.qs.length);
+          if (i >= api.qs.length) return api.finish();
+          api.nextTurn();
+          begin();
+        }, 1500);
+      }
+
+      function win(k) {
+        locked = true;
+        api.say('فريق ' + api.teams[k].name + ' بلغ خطّ النهاية', 'good');
+        later(() => api.finish(), 950);
+      }
+
+      begin();
+
+      return {
+        destroy() {
+          locked = true;
+          timers.forEach(t => clearTimeout(t));
+          timers.length = 0;
+        },
+      };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+
+  const CELLS = 16, COLS = [4, 8], CW = 54, CH = 40, GAP = 5, PAD = 5;
+  const geom = cols => {
+    const rows = Math.ceil(CELLS / cols);
+    return {
+      cols: cols, rows: rows,
+      vw: cols * CW + (cols - 1) * GAP + PAD * 2,
+      vh: rows * CH + (rows - 1) * GAP + PAD * 2,
+    };
+  };
+   
+  const bestCols = (w, h) => {
+    let pick = COLS[0], best = -1;
+    for (let c = 0; c < COLS.length; c++) {
+      const g = geom(COLS[c]);
+      const cell = Math.min(w / g.vw, h / g.vh) * CH;
+      if (cell > best) { best = cell; pick = COLS[c]; }
+    }
+    return pick;
+  };
+
+  const CSS_ID = 'css-treasure';
+  function css() {
+    if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return;
+    const s = document.createElement('style');
+    s.id = CSS_ID;
+    s.textContent = [
+       
+      '.tg-ask{ width: 100%; max-height: 100%; min-height: 0; overflow-y: auto; overflow-x: hidden;',
+      '  display: flex; flex-direction: column; align-items: center; gap: .55em; }',
+      '#tgBoard text{ font-family: var(--sea-display); font-weight: 800; }',
+      '#tgBoard .tg-cell{ cursor: pointer; }',
+      '#tgBoard .tg-cell[data-open="1"]{ cursor: default; }',
+      '#tgBoard .tg-cell:active{ opacity: .88; }',
+      '@keyframes tgOpen{ from{ transform: scale(.86); } to{ transform: none; } }',
+      '#tgBoard .tg-new{ transform-box: fill-box; transform-origin: center; animation: tgOpen .22s ease-out; }',
+      '@media (prefers-reduced-motion: reduce){ #tgBoard .tg-new{ animation: none; } }',
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+
+  S.games.define({
+    id: 'treasure',
+    name: 'صيد الكنز',
+    line: 'شبكة مخفية، والإجابة الصحيحة تعطي ضربة على مربّع.',
+    mins: [10, 15],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'المتأخّر بثلاث نقاط يضرب مربّعين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="4" y="8" width="112" height="64" rx="10" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="14" y="18" width="28" height="20" rx="5" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="46" y="18" width="28" height="20" rx="5" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="78" y="18" width="28" height="20" rx="5" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="14" y="44" width="28" height="20" rx="5" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="78" y="44" width="28" height="20" rx="5" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="46" y="44" width="28" height="20" rx="5" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="52" y="47" width="16" height="5" rx="2" fill="var(--sea-coral)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '<rect x="53" y="52" width="14" height="9" rx="2" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      css();
+
+      const T = [];                                   
+      let dead = false;
+      const wait = (fn, ms) => { T.push(setTimeout(() => { if (!dead) fn(); }, ms)); };
+
+      const vals = [3, 3, 3, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+      for (let k = vals.length - 1; k > 0; k--) {
+        const j = Math.floor(api.rnd() * (k + 1));
+        const t = vals[k]; vals[k] = vals[j]; vals[j] = t;
+      }
+      const open = vals.map(() => false);
+
+      let i = 0, phase = 'ask', hits = 0, dbl = false, locked = false, left = vals.length;
+      let cols = COLS[0];                             
+
+      function two() {
+        const sc = api.teams.map(t => t.score || 0);
+        const me = sc[api.turn()] || 0;
+        const top = Math.max.apply(null, sc.concat([0]));
+        const low = Math.min.apply(null, sc);
+        return me === low && (top - me) >= 3;
+      }
+
+      function drawAsk() {
+        const q = api.qs[i];
+        if (!q) return end();
+        api.step(i, api.qs.length);
+        el.innerHTML = '<div class="tg-ask">' +
+          (two() ? '<p class="gw-tag">الضربة المزدوجة — إجابتك الصحيحة تضرب مربّعين</p>' : '') +
+          '<h2 class="gw-q">' + api.esc(q.q) + '</h2>' +
+          '<div class="gw-opts">' + q.a.map((t, k) =>
+            '<button class="gw-opt" type="button" data-k="' + k + '">' +
+              '<span class="k">' + (KEY[k] || '') + '</span><span>' + api.esc(t) + '</span>' +
+            '</button>').join('') + '</div>' + '</div>';
+        el.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => choose(+b.dataset.k); });
+      }
+
+      function choose(k) {
+        if (dead || locked) return;
+        locked = true;
+        const q = api.qs[i], ok = k === q.c, big = two();
+        el.querySelectorAll('.gw-opt').forEach((b, n) => {
+          b.disabled = true;
+          if (n === q.c) b.dataset.st = 'ok';
+          else if (n === k) b.dataset.st = 'no';
+        });
+         
+        api.judge(ok, { text: ok ? (big ? 'صحيح — لك ضربتان' : 'صحيح — لك ضربة') : 'خطأ — ينتقل الدور' });
+        if (ok) {
+          hits = big ? 2 : 1; dbl = big;
+          wait(() => { locked = false; phase = 'dig'; drawDig(-1); }, 950);
+        } else {
+          wait(() => { locked = false; nextQ(); }, 1400);
+        }
+      }
+
+      function head() {
+        if (dbl) {
+          const t = hits > 1 ? 'بقيت لك ضربتان' : hits === 1 ? 'بقيت لك ضربة واحدة' : 'انتهت ضربتاك';
+          return '<p class="gw-tag">الضربة المزدوجة — ' + t + '</p>';
+        }
+        return '<p class="gw-head">' + (hits > 0 ? 'اختر مربّعاً واكشف ما تحته' : 'أحسنت — الدور للفريق التالي') + '</p>';
+      }
+
+      function shut(n) {
+         
+        return '<rect x="2" y="2" width="' + CW + '" height="' + CH + '" rx="7" fill="var(--sea-ink)"/>' +
+          '<rect width="' + CW + '" height="' + CH + '" rx="7" fill="var(--sea-closed)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+          '<text x="' + (CW / 2) + '" y="' + (CH / 2 + 6.5) + '" text-anchor="middle" font-size="19" fill="var(--sea-closed-mark)">' +
+          api.AR(n + 1) + '</text>';
+      }
+
+      function shown(v) {
+        const bg = '<rect width="' + CW + '" height="' + CH + '" rx="7" fill="' +
+          (v === 3 ? 'var(--sea-sun)' : 'var(--sea-white)') +
+          '" stroke="var(--sea-ink)" stroke-width="2.5"/>';
+         
+        if (!v) {
+          return bg +
+            '<path d="M9 16 q6 -5 12 0 t12 0 t12 0" fill="none" stroke="var(--sea-closed-mark)" stroke-width="3.8" stroke-linecap="round"/>' +
+            '<path d="M9 27 q6 -5 12 0 t12 0 t12 0" fill="none" stroke="var(--sea-closed-mark)" stroke-width="3.8" stroke-linecap="round"/>';
+        }
+         
+        const big = v === 3;
+        const lid = big
+          ? '<rect x="4" y="7" width="27" height="8" rx="4" fill="var(--sea-coral)" stroke="var(--sea-ink)" stroke-width="2"/>'
+          : '<rect x="8" y="10" width="22" height="7" rx="3.5" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2"/>';
+        const body = big
+          ? '<rect x="6" y="14" width="23" height="20" rx="3" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+            '<rect x="15" y="20" width="5" height="7" rx="1.5" fill="var(--sea-ink)"/>'
+          : '<rect x="9.5" y="16" width="19" height="16" rx="3" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2"/>' +
+            '<rect x="16.5" y="22" width="5" height="6" rx="1.5" fill="var(--sea-ink)"/>';
+         
+        return bg + lid + body +
+          '<text x="44" y="' + (CH / 2 + 7.5) + '" text-anchor="middle" font-size="22" fill="var(--sea-ink)">' +
+          api.AR(v) + '</text>';
+      }
+
+      function board(justOpened) {
+        const g = geom(cols);
+        let s = '<svg id="tgBoard" viewBox="0 0 ' + g.vw + ' ' + g.vh + '" preserveAspectRatio="xMidYMid meet"' +
+          ' role="group" aria-label="شبكة الكنز">';
+        for (let n = 0; n < CELLS; n++) {
+          const x = PAD + (n % g.cols) * (CW + GAP);
+          const y = PAD + Math.floor(n / g.cols) * (CH + GAP);
+          s += '<g class="tg-cell' + (n === justOpened ? ' tg-new' : '') + '"' +
+            ' data-n="' + n + '" data-open="' + (open[n] ? '1' : '0') + '"' +
+            (open[n] ? '' : ' role="button" tabindex="0"') +
+            ' aria-label="مربّع ' + api.AR(n + 1) + '"' +
+            ' transform="translate(' + x + ',' + y + ')">' +
+            (open[n] ? shown(vals[n]) : shut(n)) + '</g>';
+        }
+        return s + '</svg>';
+      }
+
+      function paint(justOpened) {
+        el.innerHTML = head() + '<div class="gw-board">' + board(justOpened) + '</div>';
+        el.querySelectorAll('.tg-cell[role="button"]').forEach(g => {
+          g.onclick = () => hit(+g.dataset.n);
+          g.onkeydown = e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hit(+g.dataset.n); }
+          };
+        });
+      }
+
+      function drawDig(justOpened) {
+        paint(justOpened);
+        const box = el.querySelector('.gw-board');
+        const r = box ? box.getBoundingClientRect() : null;
+        if (!r || !r.width || !r.height) return;       
+        const want = bestCols(r.width, r.height);
+        if (want !== cols) { cols = want; paint(justOpened); }
+      }
+
+      function hit(n) {
+        if (dead || locked || phase !== 'dig' || hits <= 0 || open[n]) return;
+        const v = vals[n];
+        open[n] = true; left--; hits--;
+        if (v) api.score(api.turn(), v);
+        api.sfx(v ? 'good' : 'soft');
+        api.say(v === 3 ? 'صندوق كبير — ثلاث نقاط' : v === 1 ? 'صندوق صغير — نقطة' : 'رمل — لا نقاط', v ? 'good' : '');
+        drawDig(n);
+        if (left <= 0) { locked = true; return wait(end, 1300); }
+        if (hits > 0) return;                          
+        locked = true;
+        wait(() => { locked = false; dbl = false; nextQ(); }, 1100);
+      }
+
+      function nextQ() {
+        i++; api.nextTurn();
+        if (i >= api.qs.length || left <= 0) return end();
+        phase = 'ask'; drawAsk();
+      }
+
+      function end() {
+        api.step(Math.min(i, api.qs.length), api.qs.length);
+        api.finish();
+      }
+
+      const onResize = () => { if (!dead && phase === 'dig') drawDig(-1); };
+      const win = (typeof window !== 'undefined') ? window : null;
+      if (win) win.addEventListener('resize', onResize);
+
+      drawAsk();
+      return {
+        destroy() {
+          dead = true; locked = true;
+          T.forEach(clearTimeout); T.length = 0;
+          if (win) win.removeEventListener('resize', onResize);
+        },
+      };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+
+  S.games.define({
+    id: 'towers',
+    name: 'الأبراج',
+    line: 'الفصل كلّه يبني برجاً واحداً — كل إجابة صحيحة قطعة.',
+    mins: [8, 12],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 6,
+    comeback: 'حين يتعذّر بلوغ البرج تصير كل إجابة قطعتين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="4" y="8" width="112" height="64" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="20" y="64" width="80" height="7" rx="3.5" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="40" y="50" width="42" height="12" rx="3" fill="var(--sea-t1)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="44" y="36" width="34" height="12" rx="3" fill="var(--sea-t3)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="48" y="22" width="26" height="12" rx="3" fill="var(--sea-t2)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<path d="M46 22 L61 8 L76 22 Z" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="3" stroke-linejoin="round"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+       
+      const GOAL = Math.max(1, Math.min(12, api.qs.length));
+
+      const UNIT = GOAL >= 11 ? 'قطعة' : 'قطع';
+
+      const built = [];             
+      const timers = [];            
+      let i = 0, locked = false, boost = false;
+
+      const after = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
+
+      style();
+
+      const headText = () => 'البرج ' + api.AR(built.length) + ' من ' + api.AR(GOAL) + ' ' + UNIT;
+
+      function rescue() {
+        const left = api.qs.length - i;
+        return (GOAL - built.length) > left;
+      }
+
+      function svg() {
+        const span = Math.max(1, GOAL - 1);
+        const H = 156 / GOAL, BASE = 186;
+        let s = '<svg viewBox="0 0 60 200" aria-hidden="true" preserveAspectRatio="xMidYMid meet">';
+        for (let k = 0; k < GOAL; k++) {
+          const w = 40 - k * (16 / span);
+          const x = 30 - w / 2;
+          const y = BASE - (k + 1) * H;
+          const h = H - 2;
+          if (k < built.length) {
+             
+            s += '<rect x="' + (x + 2).toFixed(1) + '" y="' + (y + 2).toFixed(1) + '" width="' + w.toFixed(1) +
+                 '" height="' + h.toFixed(1) + '" rx="2.5" fill="var(--sea-ink)"/>';
+            s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) +
+                 '" height="' + h.toFixed(1) + '" rx="2.5" fill="' + api.esc(built[k]) +
+                 '" stroke="var(--sea-ink)" stroke-width="2.5"/>';
+          } else {
+            s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) +
+                 '" height="' + h.toFixed(1) + '" rx="2.5" fill="none" stroke="var(--sea-sub)" ' +
+                 'stroke-width="2.5" stroke-dasharray="5 4" opacity="0.6"/>';
+          }
+        }
+        if (built.length >= GOAL) {
+          const top = BASE - GOAL * H;
+          s += '<path d="M15 ' + top.toFixed(1) + ' L30 ' + (top - 18).toFixed(1) + ' L45 ' + top.toFixed(1) +
+               ' Z" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="3" stroke-linejoin="round"/>';
+        }
+        s += '<rect x="4" y="188" width="56" height="8" rx="4" fill="var(--sea-ink)"/>';
+        s += '<rect x="2" y="186" width="56" height="8" rx="4" fill="var(--sea-teal)" stroke="var(--sea-ink)" stroke-width="2.5"/>';
+        return s + '</svg>';
+      }
+
+      function draw() {
+        const q = api.qs[i];
+        if (!q) return over();
+        api.step(i, api.qs.length);
+        boost = rescue();
+        el.innerHTML =
+          '<div class="tw-wrap">' +
+            '<div class="tw-main">' +
+              (boost ? '<p class="gw-tag">قطعة الإنقاذ — كل إجابة صحيحة قطعتان</p>' : '') +
+              '<p class="gw-head">' + api.esc(headText()) + '</p>' +
+              '<p class="gw-sub tw-sub">برج واحد للفصل كلّه — والخطأ لا يهدم.</p>' +
+              '<h2 class="gw-q">' + api.esc(q.q) + '</h2>' +
+              '<div class="gw-opts">' + q.a.map((t, k) =>
+                '<button class="gw-opt" type="button" data-k="' + k + '">' +
+                  '<span class="k">' + (KEY[k] || '') + '</span><span>' + api.esc(t) + '</span>' +
+                '</button>').join('') + '</div>' +
+            '</div>' +
+            '<div class="tw-side" id="twSide">' + svg() + '</div>' +
+          '</div>';
+        el.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => choose(+b.dataset.k); });
+      }
+
+      function choose(k) {
+        if (locked) return;
+        locked = true;
+        const q = api.qs[i], ok = k === q.c, gain = boost ? 2 : 1;
+        let laid = 0;                 
+        el.querySelectorAll('.gw-opt').forEach((b, n) => {
+          b.disabled = true;
+          if (n === q.c) b.dataset.st = 'ok';
+          else if (n === k) b.dataset.st = 'no';
+        });
+
+        if (ok) {
+          const t = api.teams[api.turn()];
+          const color = (t && t.color) || 'var(--sea-t1)';
+          const before = built.length;
+          for (let n = 0; n < gain && built.length < GOAL; n++) built.push(color);
+          laid = built.length - before;
+           
+          api.score(api.turn(), gain);
+           
+          const side = el.querySelector('#twSide');
+          if (side) side.innerHTML = svg();
+          const head = el.querySelector('.gw-head');
+          if (head) head.textContent = headText();
+          api.sfx('pop');
+        }
+
+        api.judge(ok, { text: ok ? (laid > 1 ? 'صحيح — قطعتان' : 'صحيح — قطعة') : 'فاتت القطعة' });
+
+        if (ok && built.length >= GOAL) {
+          api.step(api.qs.length, api.qs.length);
+          after(() => api.say('اكتمل البرج', 'good'), 800);
+          after(() => api.finish(), 2000);
+          return;
+        }
+
+        after(() => {
+          locked = false; i++; api.nextTurn();
+          if (i >= api.qs.length) over(); else draw();
+        }, 1500);
+      }
+
+      function over() {
+        locked = true;
+        api.step(api.qs.length, api.qs.length);
+        api.say('بلغتم ' + api.AR(built.length) + ' من ' + api.AR(GOAL) + ' ' + UNIT);    
+        after(() => api.finish(), 1600);
+      }
+
+      function style() {
+        if (document.getElementById('css-towers')) return;
+        const s = document.createElement('style');
+        s.id = 'css-towers';
+        s.textContent = [
+           
+          '.tw-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+            'gap:.45em;width:100%;flex:1 1 auto;min-height:0}',
+           
+          '.tw-side{flex:1 1 0;min-height:2.5em;width:100%;min-width:0;' +
+            'display:flex;align-items:center;justify-content:center}',
+          '.tw-side svg{width:100%;height:100%;max-height:100%;display:block}',
+          '.tw-main{flex:0 0 auto;width:100%;min-width:0;display:flex;flex-direction:column;' +
+            'align-items:center;justify-content:center;gap:.4em}',
+          '.tw-main .gw-q,.tw-main .gw-opts{width:min(26em,100%)}',
+           
+          '@media (min-width:660px){.tw-wrap{flex-direction:row;align-items:stretch;gap:.6em}',
+          '.tw-side{flex:0 1 clamp(3em,14%,6em);width:auto;align-self:stretch}',
+          '.tw-main{flex:1 1 auto;min-height:0}}',
+           
+          '@media (max-height:560px){.tw-sub{display:none}',
+          '.tw-main{gap:.3em}',
+          '.tw-main .gw-head{font-size:clamp(14px,1.05em,32px)}',
+          '.tw-main .gw-q{font-size:clamp(16px,1.25em,36px)}',
+          '.tw-main .gw-opts{flex-direction:row;flex-wrap:wrap;gap:.3em}',
+          '.tw-main .gw-opt{flex:1 1 calc(50% - .3em);min-height:44px;padding:.25em .6em}}',
+        ].join('\n');
+        document.head.appendChild(s);
+      }
+
+      draw();
+      return {
+        destroy() {
+          locked = true;
+          timers.forEach(clearTimeout);
+          timers.length = 0;
+        },
+      };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  const KEY = ['أ', 'ب', 'ج', 'د'];
+
+  S.games.define({
+    id: 'quiz',
+    name: 'سباق المعرفة',
+    line: 'سؤال على الشاشة، والفريق صاحب الدور يلمس إجابته.',
+    mins: [8, 12],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 4,
+    comeback: 'المتأخّر بثلاث نقاط يصير سؤاله بنقطتين',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="6" y="10" width="108" height="58" rx="10" fill="var(--sea-white)" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="16" y="20" width="88" height="12" rx="6" fill="var(--sea-teal)"/>' +
+        '<rect x="16" y="38" width="60" height="9" rx="4.5" fill="var(--sea-sand)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="16" y="52" width="76" height="9" rx="4.5" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      let i = 0, locked = false;
+
+      function bonus() {
+         
+        const top = Math.max.apply(null, api.teams.map(t => t.score || 0).concat([0]));
+        return (top - (api.teams[api.turn()].score || 0)) >= 3 ? 2 : 1;
+      }
+
+      function draw() {
+        const q = api.qs[i];
+        if (!q) return api.finish();
+        api.step(i, api.qs.length);
+        const pts = bonus();
+        el.innerHTML =
+          (pts > 1 ? '<p class="gw-tag">سؤال الفرصة — بنقطتين</p>' : '') +
+          '<h2 class="gw-q">' + api.esc(q.q) + '</h2>' +
+          '<div class="gw-opts">' + q.a.map((t, k) =>
+            '<button class="gw-opt" type="button" data-k="' + k + '">' +
+              '<span class="k">' + (KEY[k] || '') + '</span><span>' + api.esc(t) + '</span>' +
+            '</button>').join('') + '</div>';
+        el.querySelectorAll('[data-k]').forEach(b => { b.onclick = () => choose(+b.dataset.k); });
+      }
+
+      function choose(k) {
+        if (locked) return;
+        locked = true;
+        const q = api.qs[i], ok = k === q.c, pts = bonus();
+        el.querySelectorAll('.gw-opt').forEach((b, n) => {
+          b.disabled = true;
+          if (n === q.c) b.dataset.st = 'ok';
+          else if (n === k) b.dataset.st = 'no';
+        });
+        if (ok) api.score(api.turn(), pts);
+        api.judge(ok, { text: ok ? (pts > 1 ? 'صحيح — نقطتان' : 'صحيح') : 'خطأ' });
+        setTimeout(() => {
+          locked = false; i++; api.nextTurn();
+          if (i >= api.qs.length) { api.step(api.qs.length, api.qs.length); api.finish(); }
+          else draw();
+        }, 1500);
+      }
+
+      draw();
+      return { destroy() { locked = true; } };
+    },
+  });
+})();
+
+</script>
+<script>(function () {
+  const app = document.getElementById('app');
+  const B = SHIFT.bank, GM = SHIFT.games;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const pick = SHIFT.Store.pickedBank();
+  const bank = pick ? B.get(pick.id) : null;
+  const game = pick ? GM.get(pick.engine) : null;
+  const teamsN = (() => { try { return Math.max(2, Math.min(4, +localStorage.getItem('shift.teams.v1') || 3)); }
+                          catch (e) { return 3; } })();
+
+  function dead(why) {
+    app.innerHTML =
+      '<div class="gp-sheet"><div class="gp-card">' +
+        '<h1>ابدأ من المدخل</h1>' +
+        '<p class="gp-sub">' + esc(why) + '</p>' +
+        '<div class="gp-acts"><a class="gp-b gp-b-main" href="index.html">إلى المدخل</a></div>' +
+      '</div></div>';
+  }
+
+  if (!pick || !bank) return dead('لم تُختر مسابقة بعد — الصق أسئلتك واختر لعبة.');
+  if (!game) return dead('هذه اللعبة لم تعد في المكتبة — اختر غيرها بالأسئلة نفسها.');
+
+  const rdy = GM.ready(bank.items, game.id);
+  if (!rdy.ok) return dead(game.name + ': ' + rdy.why);
+
+  let round = 0;
+  try { round = (+localStorage.getItem('shift.round.v1') || 0); } catch (e) { round = 0; }
+
+  let live = null;
+
+  function boot() {
+    if (live) { try { live.destroy(); } catch (e) { console.warn('SHIFT: تعذّر إنهاء الجولة —', e && e.message); } }
+    const seed = GM.seed(bank.id + '|' + game.id + '|' + round);
+    const qs = GM.prep(bank.items, game.id, seed);
+    live = SHIFT.shell.mount({
+      root: app,
+      game: game,
+      qs: qs,
+      seed: seed,
+       
+      teams: GM.teamSet(Math.max(game.teams.min, Math.min(game.teams.max, teamsN))),
+      onExit() { location.href = 'index.html'; },
+      onAgain() {
+        round++;
+        try { localStorage.setItem('shift.round.v1', String(round)); } catch (e) {}    
+        boot();
+      },
+      onSwap() {
+        try { sessionStorage.setItem('shift.goto.v1', 'pick'); }
+        catch (e) { console.warn('SHIFT: تعذّرت علامة العودة إلى الاختيار —', e && e.message); }
+        location.href = 'index.html';
+      },
+    });
+     
+    console.info('SHIFT round', { game: game.id, seed: seed, qs: qs.length });
+  }
+
+  boot();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) addEventListener('load', () => {
+  navigator.serviceWorker.register('sw.js').catch(e => console.warn('SHIFT: تعذّر تجهيز العمل بلا شبكة —', e && e.message));
+});
+</script>
+</body>
+</html>
