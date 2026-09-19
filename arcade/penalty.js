@@ -73,7 +73,11 @@
       }
 
       function start(level, free) {
-        F.sheet.hidden = true; F.sheet.innerHTML = '';
+         
+        F.sheet.hidden = false;
+        F.sheet.innerHTML = (S.games.get('penalty').loaderHtml || (() => ''))('ضربات الترجيح');
+        A.onProgress = (f, label) => { const b = F.sheet.querySelector('#arLoadBar'), t = F.sheet.querySelector('#arLoadTxt');
+          if (b) b.style.transform = 'scaleX(' + Math.max(0.03, Math.min(1, f)).toFixed(3) + ')'; if (t && label) t.textContent = label; };
         const kits = api.teams.map((t, i) => {
           const k = (season && lg && !free) ? A.league.kitOf(season, lg.assign[i]) : null;
           return k || [teamHex(t.color), '#ffffff'];
@@ -83,7 +87,7 @@
         if (api.setTag) api.teams.forEach((t, i) => api.setTag(i, (season && lg && !free) ? lg.assign[i] : ''));
         A.load().then(() => {
           if (!live) return;                         
-          live.game = A.boot(F.mount, { scenes: [makeScene({ api, F, level, free, kits, labels, season, lg, done })], bg: '#1e78e0' });
+          live.game = A.boot(F.mount, { scenes: [makeScene({ api, F, level, free, kits, labels, season, lg, done, ready() { F.sheet.hidden = true; F.sheet.innerHTML = ''; } })] });
         }).catch(e => {
           console.warn('SHIFT: محرّك الأركيد لم يصل —', e && e.message);
           F.sheet.hidden = false;
@@ -168,8 +172,15 @@
         }
         sc.plateG = sc.add.graphics().setDepth(6);
         sc.hlG = sc.add.graphics().setDepth(7);
-        sc.shadow = sc.add.ellipse(0, 0, 40, 14, 0x000000, 0.28).setDepth(11);
-        sc.ball = sc.add.image(0, 0, 'ar-ball').setDepth(12);
+         
+        sc.shadow = sc.add.image(0, 0, 'ar-shadow').setDepth(3).setAlpha(0.75);
+        sc.heroShadow = sc.add.image(0, 0, 'ar-shadow').setDepth(3).setAlpha(0.8).setVisible(!!sc.art);
+        sc.keepShadow = sc.add.image(0, 0, 'ar-shadow').setDepth(3).setAlpha(0.7).setVisible(!!sc.art);
+         
+        const ballKey = sc.art && sc.textures.exists('art-ball') ? 'art-ball' : 'ar-ball';
+        sc.ballSmear = sc.add.image(0, 0, ballKey).setDepth(11).setAlpha(0).setVisible(false);
+        sc.ball = sc.add.image(0, 0, ballKey).setDepth(12);
+        sc.flashes = []; sc.flashT = 0;
         sc.sc = { W: 0, H: 0 };
 
         sc.layout();
@@ -187,11 +198,15 @@
           onMove: (x, y) => { if (sc.state === 'aim') { const k = sc.zoneAt(x, y, false); if (k >= 0 && k !== sc.hl) sc.setHl(k); } },
           onKey: k => sc.key(k),
         });
-        sc.events.once('shutdown', () => { sc.ctl.off(); clearTimeout(sc.__hs); });
-        sc.events.once('destroy', () => { sc.ctl.off(); clearTimeout(sc.__hs); });
+        sc.events.once('shutdown', () => { sc.ctl.off(); clearTimeout(sc.__hs); A.sound.quiet(); });
+        sc.events.once('destroy', () => { sc.ctl.off(); clearTimeout(sc.__hs); A.sound.quiet(); });
 
-        S.arcadeDbg = { scene: sc, shoot: k => sc.shoot(k), art: sc.art };
+        A.sound.on = () => api.sound();
+        sc.input.once('pointerdown', () => { if (A.sound.ok()) A.sound.ambient(); });
 
+        S.arcadeDbg = { scene: sc, shoot: k => sc.shoot(k), art: sc.art, occlusion: () => sc.occlusion() };
+
+        if (ctx.ready) ctx.ready();            
         if (free) sc.freeShot(); else sc.ask(0);
       }
 
@@ -204,26 +219,35 @@
         if (sc.art) L = sc.layoutArt(W, H, s, portrait); else L = sc.layoutDoll(W, H, s, portrait);
         sc.sc = L;
          
-        sc.ball.setPosition(L.bx, L.by - L.ballR).setScale(L.ballR / 60).setAngle(0).setAlpha(1);
-        sc.shadow.setPosition(L.bx, L.by + 2).setSize(L.ballR * 2.2, L.ballR * 0.8).setAlpha(0.28);
+        L.ballScale = (2 * L.ballR) / sc.ball.width;
+        sc.ball.setPosition(L.bx, L.by - L.ballR).setScale(L.ballScale).setAngle(0).setAlpha(1);
+        sc.ballSmear.setScale(L.ballScale);
+        sc.shadow.setPosition(L.bx, L.by + 2).setDisplaySize(L.ballR * 2.6, L.ballR * 1.1).setAlpha(0.75);
         sc.buildZones();
       }
 
       layoutArt(W, H, s, portrait) {
-        const sc = this, B = M.bg;
-        const tex = sc.textures.get('art-bg').getSourceImage();
+        const sc = this;
+         
+        const wide = !!(M.bgWide && sc.textures.exists('art-bg-wide'));
+        const B = wide ? M.bgWide : M.bg, key = wide ? 'art-bg-wide' : 'art-bg';
+        sc.bgImg.setTexture(key); sc.netImg.setTexture(key);
+        const tex = sc.textures.get(key).getSourceImage();
         const bw = tex.width, bh = tex.height;
         let k, ox, oy;
-        if (!portrait) { k = H / bh; ox = (W - bw * k) / 2; oy = 0; }
-        else { k = (W * 0.98) / ((B.goal[2] - B.goal[0]) * bw); ox = (W - bw * k) / 2; oy = Math.max(0, H * 0.04 - B.goal[1] * bh * k); }
+        if (!portrait) {
+           
+          if (wide) { k = Math.max(W / bw, H / bh, (0.48 * W) / ((B.goal[2] - B.goal[0]) * bw)); ox = (W - bw * k) / 2; oy = Math.min(0, (H - bh * k) * 0.72); }
+          else { k = H / bh; ox = (W - bw * k) / 2; oy = 0; }
+        } else { k = (W * 0.98) / ((B.goal[2] - B.goal[0]) * bw); ox = (W - bw * k) / 2; oy = Math.max(0, H * 0.04 - B.goal[1] * bh * k); }
         sc.bgImg.setPosition(ox, oy).setScale(k);
          
-        const band = Math.max(0, ox);
+        const band = wide ? 0 : Math.max(0, ox);
         const bwBand = Math.min(bw * 0.5, band / k);
         sc.bandL.setVisible(band > 1); sc.bandR.setVisible(band > 1);
         if (band > 1) {
-          sc.bandL.setCrop(0, 0, bwBand, bh).setScale(-k, k).setPosition(band, oy);
-          sc.bandR.setCrop(bw - bwBand, 0, bwBand, bh).setScale(-k, k).setPosition(W - band + bw * k, oy);
+          sc.bandL.setTexture(key).setCrop(0, 0, bwBand, bh).setScale(-k, k).setPosition(band, oy);
+          sc.bandR.setTexture(key).setCrop(bw - bwBand, 0, bwBand, bh).setScale(-k, k).setPosition(W - band + bw * k, oy);
         }
          
         const gx0 = B.goal[0] * bw, gy0 = B.goal[1] * bh, gw0 = (B.goal[2] - B.goal[0]) * bw, gh0 = (B.goal[3] - B.goal[1]) * bh;
@@ -238,19 +262,31 @@
           g.fillStyle(PAL.standDark, 1); g.fillRect(0, 0, W, H);
         }
         const gx = ox + (gx0 + gw0 / 2) * k, gw = gw0 * k, gTop = oy + gy0 * k, gBot = oy + B.line * bh * k, gh = gBot - gTop;
-        const bx = ox + B.spot[0] * bw * k, by = portrait ? Math.min(H * 0.86, oy + B.spot[1] * bh * k + H * 0.12) : oy + B.spot[1] * bh * k;
+        const bx = ox + B.spot[0] * bw * k;
+         
+        const by = portrait ? Math.max(H * 0.80, oy + B.spot[1] * bh * k + H * 0.12) : oy + B.spot[1] * bh * k;
         const ballR = Math.max(9, (portrait ? 0.035 : 0.045) * H);
-        const L = { W, H, s, portrait, gw, gh, gx, gTop, gBot, bx, by, ballR, pad: 10 * s, k, ox, oy };
+        const L = { W, H, s, portrait, gw, gh, gx, gTop, gBot, bx, by, ballR, pad: 10 * s, k, ox, oy, wide };
          
-        L.heroH = (portrait ? 0.30 : 0.44) * H;
+        L.heroH = (portrait ? 0.24 : 0.44) * H;
+        sc.hero.setScale(L.heroH / sc.hero.height); sc.smear.setScale(L.heroH / sc.hero.height);
          
-        L.heroX = portrait ? bx - 0.14 * W : Math.min(bx - 0.075 * W, gx - gw / 2 + 0.01 * W); L.heroY = by + (portrait ? 0.02 : 0.025) * H;
-        sc.hero.setPosition(L.heroX, L.heroY).setScale(L.heroH / sc.hero.height);
-        sc.smear.setScale(L.heroH / sc.hero.height);
+        const box = (M.chars[sc.heroChar || 'boy'].poses.ready || {}).box || [0, 0, 1, 1];
+        const dw = sc.hero.displayWidth;
+        L.heroX = portrait ? bx - 0.16 * W : (gx - gw / 2 - 0.012 * W) + dw / 2 - (box[0] + box[2]) * dw;
+        L.heroY = by + (portrait ? 0.02 : 0.06) * H;
+        L.heroBox = box;
+        sc.hero.setPosition(L.heroX, L.heroY);
          
-        L.keepH = gh * 0.72; L.keepScale = L.keepH / sc.keeperImg.height;    
-        sc.keeperImg.setPosition(gx, gBot + gh * 0.02).setScale(L.keepScale);
+        L.keepH = gh * 0.62; L.keepScale = L.keepH / sc.keeperImg.height;
+        L.keepGround = gBot + gh * 0.02;
+        sc.keeperImg.setPosition(gx, L.keepGround).setScale(L.keepScale);
         sc.keeperX = gx;
+         
+        sc.heroShadow.setPosition(L.heroX, L.heroY - 1).setDisplaySize(dw * box[2] * 0.95, L.heroH * 0.09);
+        sc.keepShadow.setPosition(gx, L.keepGround - 1).setDisplaySize(L.keepH * 0.55, L.keepH * 0.09);
+        sc.heroShadow.baseSX = sc.heroShadow.scaleX; sc.heroShadow.baseSY = sc.heroShadow.scaleY;
+        sc.keepShadow.baseSX = sc.keepShadow.scaleX; sc.keepShadow.baseSY = sc.keepShadow.scaleY;
         sc.drawRings();
         return L;
       }
@@ -361,10 +397,10 @@
           if (!free) {
             const maxW = Math.max(40, r.w - 18 * s), maxH = r.h - 10 * s;
              
-            z.txt = sc.add.text(z.cx, z.cy, q.a[k], Object.assign({
+            z.txt = sc.add.text(z.cx, sc.art ? z.y + 8 * s : z.cy, q.a[k], Object.assign({
               fontFamily: A.FONT_DISPLAY, fontSize: fs + 'px', align: 'center', rtl: true,
               wordWrap: { width: maxW, useAdvancedWrap: false },
-            }, sc.art ? { color: '#ffffff', stroke: '#0b1f2e', strokeThickness: Math.max(6, 8 * s) } : { color: '#0b1f2e' })).setOrigin(0.5).setDepth(8);
+            }, sc.art ? { color: '#ffffff', stroke: '#0b1f2e', strokeThickness: Math.max(6, 8 * s) } : { color: '#0b1f2e' })).setOrigin(0.5, sc.art ? 0 : 0.5).setDepth(8);
             for (let pass = 0; pass < 3 && (z.txt.width > maxW + 1 || z.txt.height > maxH); pass++) {
               const cur = parseFloat(z.txt.style.fontSize);
               const next = Math.max(20, Math.floor(cur * Math.min(maxW / z.txt.width, maxH / z.txt.height) * 0.98));
@@ -452,6 +488,7 @@
         sc.timeLeft = level.secs * 1000; sc.timeMax = sc.timeLeft;
         F.timer.hidden = false; F.timer.style.visibility = ''; F.timer.classList.remove('is-low'); sc.tick(0);
         sc.state = 'aim'; sc.drawHl();
+        if (i > 0) A.sound.whistle(300);
         if (sc.bonus() > 2) api.say('ضربة الفرصة — الهدف بثلاث نقاط', 'good');
       }
       bonus() {
@@ -471,8 +508,9 @@
       resetBall() {
         const sc = this, L = sc.sc;
         sc.tweens.killTweensOf(sc.ball); sc.tweens.killTweensOf(sc.shadow);
-        sc.ball.setPosition(L.bx, L.by - L.ballR).setScale(L.ballR / 60).setAngle(0).setAlpha(1).setVisible(true);
-        sc.shadow.setPosition(L.bx, L.by + 2).setAlpha(0.28);
+        sc.ball.setPosition(L.bx, L.by - L.ballR).setScale(L.ballScale).setAngle(0).setAlpha(1).setVisible(true);
+        sc.ballSmear.setVisible(false).setAlpha(0);
+        sc.shadow.setPosition(L.bx, L.by + 2).setDisplaySize(L.ballR * 2.6, L.ballR * 1.1).setAlpha(0.75);
         sc.zones.forEach(z => { z.st = ''; });
       }
        
@@ -484,11 +522,17 @@
           sc.heroChar = ch;
           sc.tweens.killTweensOf(sc.hero); sc.tweens.killTweensOf(sc.keeperImg);
           sc.heroPose('ready');
-          sc.hero.setPosition(L.heroX, L.heroY).setAlpha(1).setAngle(0).setScale(L.heroH / sc.hero.height);
+          sc.hero.setAlpha(1).setAngle(0).setScale(L.heroH / sc.hero.height);
           sc.smear.setScale(L.heroH / sc.hero.height);
+          const box = (M.chars[sc.heroChar].poses.ready || {}).box || [0, 0, 1, 1], dw = sc.hero.displayWidth;
+          if (!L.portrait) L.heroX = (L.gx - L.gw / 2 - 0.012 * L.W) + dw / 2 - (box[0] + box[2]) * dw;
+          L.heroBox = box;
+          sc.hero.setPosition(L.heroX, L.heroY);
+          sc.heroShadow.setPosition(L.heroX, L.heroY - 1).setDisplaySize(dw * box[2] * 0.95, L.heroH * 0.09);
+          sc.heroShadow.baseSX = sc.heroShadow.scaleX; sc.heroShadow.baseSY = sc.heroShadow.scaleY;
           sc.keeperPose('ready', false);
           L.keepScale = L.keepH / sc.keeperImg.height;
-          sc.keeperImg.setPosition(L.gx, L.gBot + L.gh * 0.02).setScale(L.keepScale).setAlpha(1); sc.keeperX = L.gx;
+          sc.keeperImg.setPosition(L.gx, L.keepGround).setScale(L.keepScale).setAlpha(1); sc.keeperX = L.gx;
           sc.smear.setVisible(false).setAlpha(0);
           sc.drawRings();
            
@@ -512,6 +556,15 @@
           const x = sc.frozen ? L.gx : L.gx + Math.sin(sc.kt / 1000 * Math.PI * 2 / sc.period) * amp;
           sc.keeperX = x;
           if (sc.art) { sc.keeperImg.x = x; if (A.kitMode === 'ring') sc.drawRings(); } else sc.keeper.c.x = x;
+        }
+        if (sc.art) {
+           
+          const hk = Math.min(1, Math.max(0, L.heroY - sc.hero.y) / (L.heroH * 0.5));
+          sc.heroShadow.x = sc.hero.x; sc.heroShadow.setScale(sc.heroShadow.baseSX * (1 - 0.45 * hk), sc.heroShadow.baseSY * (1 - 0.45 * hk)).setAlpha(0.8 * (1 - 0.7 * hk));
+          const kk = Math.min(1, Math.max(0, L.keepGround - sc.keeperImg.y) / (L.keepH * 0.5));
+          sc.keepShadow.x = sc.keeperImg.x; sc.keepShadow.setScale(sc.keepShadow.baseSX * (1 - 0.4 * kk), sc.keepShadow.baseSY * (1 - 0.4 * kk)).setAlpha(0.7 * (1 - 0.7 * kk));
+           
+          if (!sc.frozen) { sc.flashT -= d; if (sc.flashT <= 0) { sc.flashT = 450 + Math.random() * 700; sc.cameraFlash(1); } }
         }
         if (sc.smearOn && sc.art) {
            
@@ -544,20 +597,27 @@
         const dir = dx >= 0 ? 1 : -1;
         const flight = level.flight;
         const high = z.cy < L.gTop + L.gh * 0.5;
-        api.sfx('turn');
+        api.sfx('turn'); A.sound.crowd(0.22, 0.5);
 
         const launch = () => {
-          api.sfx('pop');
+          api.sfx('pop'); A.sound.kick();
           const x0 = sc.ball.x, y0 = sc.ball.y, x1 = z.cx, y1 = z.cy;
           const arc = 90 * s * (high ? 1.3 : 0.8);
-          const base0 = L.ballR / 60;
+          const base0 = L.ballScale;
+          let px = x0, py = y0;
+          sc.ballSmear.setVisible(true).setTexture(sc.ball.texture.key);
           sc.tweens.addCounter({ from: 0, to: 1, duration: flight, ease: 'Sine.easeOut',
             onUpdate: tw => { const p = tw.getValue();
               sc.ball.x = x0 + (x1 - x0) * p; sc.ball.y = y0 + (y1 - y0) * p - Math.sin(Math.PI * p) * arc;
               const base = base0 * (1 - 0.42 * p), sq = Math.max(0, 1 - p * 5);
-              sc.ball.setScale(base * (1 + 0.38 * sq), base * (1 - 0.34 * sq)); sc.ball.angle += 14;
-              sc.shadow.x = sc.ball.x; sc.shadow.y = L.by + 2 + (L.gBot - L.by) * p; sc.shadow.setAlpha(0.28 * (1 - p * 0.7)); },
-            onComplete: () => sc.land(z, correct, saved, turn) });
+              sc.ball.setScale(base * (1 + 0.38 * sq), base * (1 - 0.34 * sq)); sc.ball.angle += 16;
+               
+              const vx = sc.ball.x - px, vy = sc.ball.y - py, vlen = Math.hypot(vx, vy);
+              if (vlen > 0.5) { sc.ballSmear.setPosition(sc.ball.x - vx * 1.6, sc.ball.y - vy * 1.6).setRotation(Math.atan2(vy, vx)).setScale(base * 1.9, base * 0.7).setAlpha(0.3 * (1 - p * 0.5)); }
+              px = sc.ball.x; py = sc.ball.y;
+              sc.shadow.x = sc.ball.x; sc.shadow.y = L.by + 2 + (L.gBot - L.by) * p;
+              sc.shadow.setDisplaySize(L.ballR * 2.6 * (1 - 0.5 * p), L.ballR * 1.1 * (1 - 0.5 * p)).setAlpha(0.75 * (1 - p * 0.8)); },
+            onComplete: () => { sc.ballSmear.setVisible(false).setAlpha(0); sc.land(z, correct, saved, turn); } });
            
           const diveTo = saved ? (z.cx - kx) : (dir * reach * 0.8 * (reads ? -1 : 1));
           sc.time.delayedCall(flight * 0.2, () => {
@@ -565,7 +625,7 @@
               const centre = Math.abs(diveTo) < L.gw * 0.08;
               sc.keeperPose(centre && high ? 'jump' : (high ? 'dive-high' : 'dive-low'), diveTo < 0);
               if (sc.keepBob) sc.keepBob.stop();
-              sc.tweens.add({ targets: sc.keeperImg, x: kx + diveTo, y: L.gBot + L.gh * 0.02 - (high ? L.gh * 0.12 : L.gh * 0.02), duration: flight * 0.75, ease: 'Quad.easeOut' });
+              sc.tweens.add({ targets: sc.keeperImg, x: kx + diveTo, y: L.keepGround - (high ? L.gh * 0.12 : L.gh * 0.02), duration: flight * 0.75, ease: 'Quad.easeOut' });
             } else if (sc.keeper) sc.keeper.dive(diveTo >= 0 ? 1 : -1, diveTo, flight * 0.7);
           });
         };
@@ -600,8 +660,8 @@
           z.st = 'no'; const c = api.qs[sc.qi].c; if (sc.zones[c]) sc.zones[c].st = 'ok';
           sc.drawPlates();
           A.feel.hitstop(sc, 70); A.feel.shake(sc, 140, 0.004);
-          api.sfx('soft');
-          sc.tweens.add({ targets: sc.ball, x: z.cx + (rnd() - 0.5) * 120 * s, y: L.by - 90 * s, scale: L.ballR / 60 * 0.9, duration: 520, ease: 'Bounce.easeOut' });
+          api.sfx('soft'); A.sound.thud(); A.sound.groan();
+          sc.tweens.add({ targets: sc.ball, x: z.cx + (rnd() - 0.5) * 120 * s, y: L.by - 90 * s, scale: L.ballScale * 0.9, duration: 520, ease: 'Bounce.easeOut' });
           sc.tweens.add({ targets: sc.shadow, x: z.cx, y: L.by - 10 * s, alpha: 0.2, duration: 520 });
           A.feel.burst(sc, z.cx, z.cy, [PAL.bad, 0xffffff], 14, { tex: 'ar-dot', vmin: 120, vmax: 260, s: 0.7, g: 700 });
           A.feel.pop(sc, L.gx, L.gBot + 60 * s, 'خطأ', { color: '#ffd5d5', fontSize: Math.max(44, 58 * s) + 'px' });
@@ -613,9 +673,9 @@
         if (saved) {
           z.st = 'ok'; sc.drawPlates();
           const kx = sc.art ? sc.keeperImg.x : sc.keeper.c.x, ky = sc.art ? sc.keeperImg.y - L.keepH * 0.45 : sc.keeper.c.y - L.gh * 0.45;
-          sc.tweens.add({ targets: sc.ball, x: kx, y: ky, scale: L.ballR / 60 * 0.6, duration: 160 });
+          sc.tweens.add({ targets: sc.ball, x: kx, y: ky, scale: L.ballScale * 0.6, duration: 160 });
           sc.shadow.setAlpha(0);
-          A.feel.hitstop(sc, 80); A.feel.shake(sc, 160, 0.005);
+          A.feel.hitstop(sc, 80); A.feel.shake(sc, 160, 0.005); A.sound.groan();
           A.feel.burst(sc, z.cx, z.cy, [0xffffff, PAL.sun], 12, { tex: 'ar-dot', vmin: 100, vmax: 240, s: 0.6, g: 600 });
           A.feel.pop(sc, L.gx, L.gBot + 60 * s, 'تصدّى الحارس', { color: '#fff3c4', fontSize: Math.max(40, 50 * s) + 'px' });
           keeperJoy(); heroMiss();
@@ -625,12 +685,13 @@
         }
          
         z.st = 'ok'; sc.drawPlates();
-        sc.tweens.add({ targets: sc.ball, y: z.cy + 14 * s, scale: L.ballR / 60 * 0.5, alpha: 0.85, duration: 180, ease: 'Sine.easeOut' });
+        sc.tweens.add({ targets: sc.ball, y: z.cy + 14 * s, scale: L.ballScale * 0.5, alpha: 0.85, duration: 180, ease: 'Sine.easeOut' });
+        sc.cameraFlash(28);
         sc.shadow.setAlpha(0);
         if (sc.art) sc.tweens.add({ targets: sc.netImg, scaleX: L.k * 1.02, scaleY: L.k * 1.03, duration: 110, yoyo: true, repeat: 3, ease: 'Sine.easeInOut' });
         else sc.tweens.add({ targets: sc.netG, scaleX: 1.025, scaleY: 1.03, duration: 120, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
         A.feel.hitstop(sc, 95); A.feel.flash(sc, 110); A.feel.shake(sc, 220, 0.008);
-        api.sfx('good');
+        api.sfx('good'); A.sound.roar(0.9, 2.2);
         sc.time.delayedCall(60, () => {
           A.feel.burst(sc, z.cx, z.cy, kit.concat([PAL.sun, 0xffffff]), 46);
           A.feel.burst(sc, L.gx, L.gTop, kit, 30, { a0: 20, a1: 160, vmin: 150, vmax: 380 });
@@ -654,12 +715,48 @@
       timeout() {
         const sc = this, L = sc.sc, s = L.s;
         sc.state = 'shot'; sc.hlG.clear(); F.timer.style.visibility = 'hidden';
+        A.sound.whistle(600);
         const c = api.qs[sc.qi].c; if (sc.zones[c]) sc.zones[c].st = 'ok'; sc.drawPlates();
         A.feel.pop(sc, L.gx, L.gBot + 60 * s, 'انتهى الوقت', { color: '#ffd5d5', fontSize: Math.max(40, 52 * s) + 'px' });
         if (sc.art) { sc.heroPose('miss'); sc.keeperPose('save', false); } else { sc.striker.miss(); sc.keeper.joy(); }
         sc.streak[api.turn()] = 0;
         api.judge(false, { text: 'الصحيح: ' + api.qs[sc.qi].a[c] });
         sc.after(1800);
+      }
+       
+      cameraFlash(n) {
+        const sc = this, L = sc.sc; if (!sc.art || !L.W) return;
+        for (let i = 0; i < n; i++) {
+          const delay = n > 1 ? Math.random() * 1300 : 0;
+          sc.time.delayedCall(delay, () => {
+            if (!sc.sys || !sc.sys.isActive()) return;
+            let x, y, tries = 0;
+            do { x = Math.random() * L.W; y = Math.max(4, L.gTop - L.gh * 0.9) + Math.random() * L.gh * 1.2; tries++; }
+            while (tries < 6 && x > L.gx - L.gw / 2 - 20 && x < L.gx + L.gw / 2 + 20 && y > L.gTop);
+            const f = sc.add.image(x, y, 'ar-dot').setDepth(2).setScale(0.25).setAlpha(0.95);
+            sc.tweens.add({ targets: f, scale: 0.9, alpha: 0, duration: 200, ease: 'Quad.easeOut', onComplete: () => f.destroy() });
+          });
+        }
+      }
+       
+      occlusion() {
+        const sc = this, out = [];
+        const figRect = (img, box) => {
+          const dw = img.displayWidth, dh = img.displayHeight, left = img.x - dw * img.originX, top = img.y - dh * img.originY;
+          return new Phaser.Geom.Rectangle(left + box[0] * dw, top + box[1] * dh, box[2] * dw, box[3] * dh);
+        };
+        const chars = [];
+        if (sc.art) {
+          const hb = (M.chars[sc.heroChar || 'boy'].poses.ready || {}).box || [0, 0, 1, 1];
+          const kb = (M.chars.keeper.poses.ready || {}).box || [0, 0, 1, 1];
+          chars.push(['hero', figRect(sc.hero, hb)], ['keeper', figRect(sc.keeperImg, kb)]);
+        }
+        chars.forEach(([n, r]) => sc.zones.forEach(z => {
+          if (!z.txt) return;
+          const t = z.txt.getBounds();
+          if (Phaser.Geom.Intersects.RectangleToRectangle(r, t)) out.push(n + '×' + z.idx + ' «' + z.txt.text + '»');
+        }));
+        return out;
       }
       wave() {
         const sc = this, s = sc.sc.s;

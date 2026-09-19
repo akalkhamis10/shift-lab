@@ -206,6 +206,12 @@
 .sea-dot{ display:inline-block; width:4px; height:4px; border-radius:50%;
   background:var(--sea-sub); margin-inline:8px; vertical-align:middle; }
 
+.sea-game-wrap{ display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sea-warm{ font: inherit; font-weight: 600; font-size: 15px; min-height: 44px; padding: 0 14px; cursor: pointer;
+  background: var(--sea-white); color: var(--sea-ink); border: 2px solid var(--sea-ink); border-radius: var(--sea-r-sm); }
+.sea-warm[disabled]{ cursor: default; opacity: .8; }
+.sea-warm.is-ready{ background: var(--sea-t3); color: var(--sea-white); border-color: var(--sea-ink); }
+
 </style>
 <style>
 .gp{
@@ -416,6 +422,13 @@
 .gp-arcade .gp-say{ position: absolute; left: 50%; right: auto; bottom: calc(var(--gp-pad) + 3.4em);
   width: max-content; max-width: 88%; z-index: 6; transform: translate(-50%, .6em); }
 .gp-arcade .gp-say.on{ transform: translate(-50%, 0); }
+
+.ar-load{ display: flex; flex-direction: column; align-items: center; gap: .6em; width: min(28em, 90%); margin: auto;
+  background: var(--sea-white); border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r); box-shadow: var(--sea-shadow); padding: 1.2em 1.4em; }
+.ar-load b{ font-family: var(--sea-display); font-weight: 800; font-size: 1.15em; }
+.ar-load small{ font-size: .85em; color: var(--sea-sub); }
+.ar-bar{ width: 100%; height: 14px; border-radius: 999px; border: 2px solid var(--sea-ink); overflow: hidden; background: var(--sea-sand); }
+.ar-bar i{ display: block; height: 100%; background: var(--sea-coral); transform-origin: right center; transform: scaleX(.03); transition: transform .25s ease; }
 
 </style>
 </head>
@@ -4955,28 +4968,52 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
     },
 
     mount(el, api) {
-      const A = () => S.arcade;
       let inst = null, dead = false;
-      el.innerHTML = '<p class="gw-sub ar-wait">تُجهَّز اللعبة…</p>';
+      el.innerHTML = loader('تُجهَّز ضربات الترجيح');
+      const prog = (f, label) => { const b = el.querySelector('#arLoadBar'), t = el.querySelector('#arLoadTxt');
+        if (b) b.style.transform = 'scaleX(' + Math.max(0.03, Math.min(1, f)).toFixed(3) + ')'; if (t && label) t.textContent = label; };
        
       Promise.resolve()
         .then(() => (S.arcade && S.arcade.script) ? null : loadScript('arcade/core.js'))
-        .then(() => Promise.all([S.arcade.load(), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason(), S.arcade.loadArtMeta()]))
-        .then(() => { if (!dead) inst = S.arcade.games.penalty.mount(el, api); })
+        .then(() => { prog(0.1, 'يُحمَّل محرّك الحركة'); S.arcade.onProgress = prog;
+          return Promise.all([S.arcade.load().then(() => prog(0.5, 'تُحمَّل اللعبة')), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason(), S.arcade.loadArtMeta()]); })
+        .then(() => { prog(0.6, 'جاهزة'); if (!dead) inst = S.arcade.games.penalty.mount(el, api); })
         .catch(e => {
           console.warn('SHIFT: لم تُفتح ضربات الترجيح —', e && e.message);
           if (!dead) el.innerHTML = '<div class="gp-card"><h1>لم تُفتح اللعبة</h1><p class="gp-sub">تعذّر تحميل محرّك الحركة على هذا الجهاز. جرّب إعادة الفتح، أو بدّل اللعبة بالأسئلة نفسها.</p></div>';
         });
-      function loadScript(src) {
-        return new Promise((res, rej) => {
-          const s = document.createElement('script'); s.src = src; s.async = true;
-          s.onload = () => res(src); s.onerror = () => rej(new Error('تعذّر تحميل ' + src));
-          document.head.appendChild(s);
-        });
-      }
       return { destroy() { dead = true; if (inst) inst.destroy(); } };
     },
+
+    warm(onProgress) {
+      const p = f => { try { if (onProgress) onProgress(f); } catch (e) {} };    
+      return Promise.resolve()
+        .then(() => (S.arcade && S.arcade.script) ? null : loadScript('arcade/core.js'))
+        .then(() => S.arcade.loadArtMeta())
+        .then(() => {
+          const A = S.arcade;
+          const set = A.artSet(screen.width || 1280, screen.height || 720);
+          const files = ['vendor/phaser-4.2.1.iife.js', 'arcade/core.js', 'arcade/penalty.js'].concat(A.SEASON_FILES, [A.ART_META], A.artFiles(set));
+          let done = 0, bytes = 0;
+          return files.reduce((q, f) => q.then(() => fetch(f, { cache: 'no-cache' }).then(r => {
+            if (!r.ok) throw new Error(f + ' — ' + r.status);
+            return r.arrayBuffer().then(buf => { bytes += buf.byteLength; done++; p(done / files.length); });
+          })), Promise.resolve()).then(() => ({ n: done, bytes }));
+        });
+    },
   });
+   
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = src; s.async = true;
+      s.onload = () => res(src); s.onerror = () => rej(new Error('تعذّر تحميل ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  function loader(title) {
+    return '<div class="ar-load gw-mine"><b>' + title + '</b><div class="ar-bar"><i id="arLoadBar"></i></div><small id="arLoadTxt">لحظة</small></div>';
+  }
+  S.games.get('penalty').loaderHtml = loader;
 })();
 
 </script>

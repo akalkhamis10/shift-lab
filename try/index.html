@@ -201,6 +201,12 @@
 .sea-dot{ display:inline-block; width:4px; height:4px; border-radius:50%;
   background:var(--sea-sub); margin-inline:8px; vertical-align:middle; }
 
+.sea-game-wrap{ display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sea-warm{ font: inherit; font-weight: 600; font-size: 15px; min-height: 44px; padding: 0 14px; cursor: pointer;
+  background: var(--sea-white); color: var(--sea-ink); border: 2px solid var(--sea-ink); border-radius: var(--sea-r-sm); }
+.sea-warm[disabled]{ cursor: default; opacity: .8; }
+.sea-warm.is-ready{ background: var(--sea-t3); color: var(--sea-white); border-color: var(--sea-ink); }
+
 </style>
 </head>
 <body>
