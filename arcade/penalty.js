@@ -32,6 +32,10 @@
             '<div class="gp-acts ar-levels">' +
               ['easy', 'mid', 'hard'].map(k => '<button class="gp-b' + (cur && cur.id === k ? ' gp-b-main' : '') + '" type="button" data-lv="' + k + '">' + A.LEVELS[k].name + '</button>').join('') +
             '</div>' +
+            '<p class="gp-sub">الهدّاف</p>' +
+            '<div class="gp-acts ar-levels">' +
+              [['auto', 'يتبادلان'], ['boy', 'الولد'], ['girl', 'البنت']].map(h => '<button class="gp-b gp-b-x' + (A.hero.get() === h[0] ? ' gp-b-main' : '') + '" type="button" data-hero="' + h[0] + '">' + h[1] + '</button>').join('') +
+            '</div>' +
             '<div class="gp-acts">' +
               '<button class="gp-b gp-b-x" type="button" data-free="1">تسديد حرّ بلا أسئلة</button>' +
               (lg ? '<button class="gp-b gp-b-x" type="button" data-newlg="1">دوري جديد</button>' : '') +
@@ -39,6 +43,7 @@
           '</div>';
         F.sheet.querySelectorAll('[data-lv]').forEach(b => { b.onclick = () => begin(A.level.set(b.dataset.lv), false); });
         F.sheet.querySelector('[data-free]').onclick = () => begin(A.level.get() || A.LEVELS.mid, true);
+        F.sheet.querySelectorAll('[data-hero]').forEach(b => { b.onclick = () => { A.hero.set(b.dataset.hero); sheet(); }; });
         const nl = F.sheet.querySelector('[data-newlg]');
         if (nl) nl.onclick = () => { A.league.clear(); lg = null; sheet(); };
       }
@@ -74,6 +79,8 @@
           return k || [teamHex(t.color), '#ffffff'];
         });
         const labels = api.teams.map((t, i) => (season && lg && !free) ? lg.assign[i] : t.name);
+         
+        if (api.setTag) api.teams.forEach((t, i) => api.setTag(i, (season && lg && !free) ? lg.assign[i] : ''));
         A.load().then(() => {
           if (!live) return;                         
           live.game = A.boot(F.mount, { scenes: [makeScene({ api, F, level, free, kits, labels, season, lg, done })], bg: '#1e78e0' });
@@ -118,9 +125,12 @@
     const Phaser = G.Phaser;
     const { api, F, level, free, kits, labels } = ctx;
     const rnd = api.rnd;
+    const M = A.art;
 
     return class Pitch extends Phaser.Scene {
       constructor() { super('pitch'); }
+
+      preload() { if (M) A.preloadArt(this); }
 
       create() {
         const sc = this;
@@ -131,6 +141,7 @@
         sc.period = level.period; sc.kt = 0; sc.timeLeft = 0; sc.freeGoals = 0;
         sc.frozen = A.frozen();
         sc.zones = []; sc.hl = -1;
+        sc.art = !!(M && A.artReady(sc));
 
         A.feel.ensureTex(sc);
         makeBallTexture(sc);
@@ -138,17 +149,27 @@
         sc.bg = sc.add.graphics().setDepth(0);
         sc.crowdC = sc.add.container(0, 0).setDepth(1);
         sc.crowd = [];
-        sc.netG = sc.add.graphics().setDepth(4);
-        sc.goalG = sc.add.graphics().setDepth(5);
+        if (sc.art) {
+          sc.bgImg = sc.add.image(0, 0, 'art-bg').setOrigin(0, 0).setDepth(1);
+          sc.bandL = sc.add.image(0, 0, 'art-bg').setOrigin(0, 0).setDepth(1);
+          sc.bandR = sc.add.image(0, 0, 'art-bg').setOrigin(0, 0).setDepth(1);
+           
+          sc.netImg = sc.add.image(0, 0, 'art-bg').setOrigin(0, 0).setDepth(4);
+          sc.ringG = sc.add.graphics().setDepth(9);
+          sc.keeperImg = sc.add.image(0, 0, A.artKey('keeper', 'ready')).setOrigin(0.5, 1).setDepth(10);
+          sc.smear = sc.add.image(0, 0, A.artKey('boy', 'runup')).setOrigin(0.5, 1).setDepth(12).setAlpha(0).setVisible(false);
+          sc.hero = sc.add.image(0, 0, A.artKey('boy', 'ready')).setOrigin(0.5, 1).setDepth(13);
+          sc.heroChar = 'boy';
+        } else {
+          sc.netG = sc.add.graphics().setDepth(4);
+          sc.goalG = sc.add.graphics().setDepth(5);
+          sc.keeper = A.doll(sc, 0, 0, { h: 120, kit: kits[1 % kits.length], depth: 10 }).ready();
+          sc.striker = A.doll(sc, 0, 0, { h: 150, kit: kits[0], depth: 13 }).idle();
+        }
         sc.plateG = sc.add.graphics().setDepth(6);
         sc.hlG = sc.add.graphics().setDepth(7);
-        sc.keeper = A.doll(sc, 0, 0, { h: 120, kit: kits[1 % kits.length], depth: 10 }).ready();
         sc.shadow = sc.add.ellipse(0, 0, 40, 14, 0x000000, 0.28).setDepth(11);
         sc.ball = sc.add.image(0, 0, 'ar-ball').setDepth(12);
-        sc.striker = A.doll(sc, 0, 0, { h: 150, kit: kits[0], depth: 13 }).idle();
-        sc.badge = sc.add.text(0, 0, '', {
-          fontFamily: A.FONT_DISPLAY, fontSize: '30px', color: '#ffffff', stroke: '#0b1f2e', strokeThickness: 8, rtl: true,
-        }).setOrigin(0.5).setDepth(14);
         sc.sc = { W: 0, H: 0 };
 
         sc.layout();
@@ -158,7 +179,7 @@
           if (sc.state === 'shot') { sc.pendingLayout = true; return; }              
           sc.layout();
         });
-        A.onFonts(sc, () => { sc.zones.forEach(z => z.txt && z.txt.updateText()); sc.badge.updateText(); });
+        A.onFonts(sc, () => { sc.zones.forEach(z => z.txt && z.txt.updateText()); });
 
         sc.ctl = A.input(sc, {
           dragIsTap: true,
@@ -169,7 +190,7 @@
         sc.events.once('shutdown', () => { sc.ctl.off(); clearTimeout(sc.__hs); });
         sc.events.once('destroy', () => { sc.ctl.off(); clearTimeout(sc.__hs); });
 
-        S.arcadeDbg = { scene: sc, shoot: k => sc.shoot(k) };
+        S.arcadeDbg = { scene: sc, shoot: k => sc.shoot(k), art: sc.art };
 
         if (free) sc.freeShot(); else sc.ask(0);
       }
@@ -178,34 +199,85 @@
         const sc = this, W = sc.scale.width, H = sc.scale.height;
         if (!W || !H) return;
         const s = Phaser.Math.Clamp(Math.min(W / 1280, H / 560), 0.42, 1.6);
-         
         const portrait = H > W * 1.1;
+        let L;
+        if (sc.art) L = sc.layoutArt(W, H, s, portrait); else L = sc.layoutDoll(W, H, s, portrait);
+        sc.sc = L;
+         
+        sc.ball.setPosition(L.bx, L.by - L.ballR).setScale(L.ballR / 60).setAngle(0).setAlpha(1);
+        sc.shadow.setPosition(L.bx, L.by + 2).setSize(L.ballR * 2.2, L.ballR * 0.8).setAlpha(0.28);
+        sc.buildZones();
+      }
+
+      layoutArt(W, H, s, portrait) {
+        const sc = this, B = M.bg;
+        const tex = sc.textures.get('art-bg').getSourceImage();
+        const bw = tex.width, bh = tex.height;
+        let k, ox, oy;
+        if (!portrait) { k = H / bh; ox = (W - bw * k) / 2; oy = 0; }
+        else { k = (W * 0.98) / ((B.goal[2] - B.goal[0]) * bw); ox = (W - bw * k) / 2; oy = Math.max(0, H * 0.04 - B.goal[1] * bh * k); }
+        sc.bgImg.setPosition(ox, oy).setScale(k);
+         
+        const band = Math.max(0, ox);
+        const bwBand = Math.min(bw * 0.5, band / k);
+        sc.bandL.setVisible(band > 1); sc.bandR.setVisible(band > 1);
+        if (band > 1) {
+          sc.bandL.setCrop(0, 0, bwBand, bh).setScale(-k, k).setPosition(band, oy);
+          sc.bandR.setCrop(bw - bwBand, 0, bwBand, bh).setScale(-k, k).setPosition(W - band + bw * k, oy);
+        }
+         
+        const gx0 = B.goal[0] * bw, gy0 = B.goal[1] * bh, gw0 = (B.goal[2] - B.goal[0]) * bw, gh0 = (B.goal[3] - B.goal[1]) * bh;
+        sc.netImg.setCrop(gx0, gy0, gw0, gh0).setPosition(ox, oy).setScale(k);
+         
+        const g = sc.bg; g.clear();
+        if (portrait) {
+          const sky = sc.textures.getPixel(Math.round(bw / 2), 4, 'art-bg'), grass = sc.textures.getPixel(Math.round(bw / 2), bh - 6, 'art-bg');
+          g.fillStyle(sky ? sky.color : PAL.sky, 1); g.fillRect(0, 0, W, Math.max(0, oy + 1));
+          g.fillStyle(grass ? grass.color : PAL.grass, 1); g.fillRect(0, oy + bh * k - 1, W, H);
+        } else {
+          g.fillStyle(PAL.standDark, 1); g.fillRect(0, 0, W, H);
+        }
+        const gx = ox + (gx0 + gw0 / 2) * k, gw = gw0 * k, gTop = oy + gy0 * k, gBot = oy + B.line * bh * k, gh = gBot - gTop;
+        const bx = ox + B.spot[0] * bw * k, by = portrait ? Math.min(H * 0.86, oy + B.spot[1] * bh * k + H * 0.12) : oy + B.spot[1] * bh * k;
+        const ballR = Math.max(9, (portrait ? 0.035 : 0.045) * H);
+        const L = { W, H, s, portrait, gw, gh, gx, gTop, gBot, bx, by, ballR, pad: 10 * s, k, ox, oy };
+         
+        L.heroH = (portrait ? 0.30 : 0.44) * H;
+         
+        L.heroX = portrait ? bx - 0.14 * W : Math.min(bx - 0.075 * W, gx - gw / 2 + 0.01 * W); L.heroY = by + (portrait ? 0.02 : 0.025) * H;
+        sc.hero.setPosition(L.heroX, L.heroY).setScale(L.heroH / sc.hero.height);
+        sc.smear.setScale(L.heroH / sc.hero.height);
+         
+        L.keepH = gh * 0.72; L.keepScale = L.keepH / sc.keeperImg.height;    
+        sc.keeperImg.setPosition(gx, gBot + gh * 0.02).setScale(L.keepScale);
+        sc.keeperX = gx;
+        sc.drawRings();
+        return L;
+      }
+
+      layoutDoll(W, H, s, portrait) {
+        const sc = this;
         const gw = portrait ? W * 0.92 : Math.min(W * 0.72, H * 1.3);
         const gh = portrait ? gw * 0.56 : gw * 0.34;
         const gx = W / 2, gTop = portrait ? Math.max(H * 0.05, 10) : Math.max(H * 0.09, 12), gBot = gTop + gh;
         const horizon = portrait ? gBot + 26 * s : H * 0.36;
         const standTop = portrait ? gTop * 0.5 : horizon * 0.3;
         const bx = W / 2, by = portrait ? H * 0.68 : H * 0.80;
-        sc.sc = { W, H, s, horizon, standTop, gw, gh, gx, gTop, gBot, bx, by, pad: 10 * s, portrait };
-
+        const L = { W, H, s, horizon, standTop, gw, gh, gx, gTop, gBot, bx, by, ballR: 17 * s, pad: 10 * s, portrait };
         const g = sc.bg; g.clear();
         g.fillStyle(PAL.sky, 1); g.fillRect(0, 0, W, standTop * 0.6);
         g.fillStyle(PAL.skyLow, 1); g.fillRect(0, standTop * 0.6, W, horizon - standTop * 0.6);
         g.fillStyle(PAL.standDark, 1); g.fillRect(0, standTop, W, horizon - standTop);
         g.fillStyle(PAL.stand, 1); g.fillRect(0, standTop, W, (horizon - standTop) * 0.16);
-        g.fillStyle(0xffffff, 0.08); g.fillRect(0, standTop + (horizon - standTop) * 0.5, W, (horizon - standTop) * 0.06);
-         
         g.fillStyle(PAL.sun, 1); g.fillRect(0, horizon - 14 * s, W, 14 * s);
         const bands = 7, bh = (H - horizon) / bands;
         for (let k = 0; k < bands; k++) { g.fillStyle(k % 2 ? PAL.grassAlt : PAL.grass, 1); g.fillRect(0, horizon + k * bh, W, bh + 1); }
-         
         g.lineStyle(4 * s, PAL.line, 0.9);
         g.strokeRect(gx - gw * 0.95, gBot, gw * 1.9, (by - gBot) * 0.62);
         g.strokeRect(gx - gw * 0.62, gBot, gw * 1.24, (by - gBot) * 0.28);
         g.lineBetween(0, gBot, W, gBot);
         g.fillStyle(PAL.line, 0.9); g.fillCircle(bx, by, 5 * s);
         g.lineStyle(4 * s, PAL.line, 0.9); g.beginPath(); g.arc(bx, by, gw * 0.42, Math.PI * 1.15, Math.PI * 1.85, false); g.strokePath();
-
         sc.crowdC.removeAll(true); sc.crowd = [];
         const cols = Math.floor(W / (22 * s)), rows = 4, rowH = (horizon - standTop) * 0.19;
         const palette = PAL.crowd.concat(kits.map(k => A.hex(k[0])));
@@ -215,7 +287,6 @@
           const d = sc.add.circle(cx, cy, 8.5 * s, col).setStrokeStyle(2 * s, PAL.ink, 0.5);
           d.baseY = cy; sc.crowdC.add(d); sc.crowd.push(d);
         }
-
         const ng = sc.netG; ng.clear(); ng.setPosition(gx, gTop + gh / 2); ng.setScale(1);
         const X = x => x - gx, Y = y => y - (gTop + gh / 2);
         const depth = gh * 0.28;
@@ -233,20 +304,33 @@
         pg.fillStyle(0xffffff, 1); pg.fillRoundedRect(gx - gw / 2 - pw / 2, gTop - pw / 2, gw + pw, pw, 3);
         pg.fillRoundedRect(gx - gw / 2 - pw / 2, gTop - pw / 2, pw, gh + pw / 2, 3);
         pg.fillRoundedRect(gx + gw / 2 - pw / 2, gTop - pw / 2, pw, gh + pw / 2, 3);
-
-        const kh = gh * 0.66;
-        sc.keeper.destroy(); sc.keeper = A.doll(sc, gx, gBot + 2, { h: kh, kit: kits[sc.keeperKit == null ? 1 % kits.length : sc.keeperKit], depth: 10 }).ready();
+        sc.keeper.destroy(); sc.keeper = A.doll(sc, gx, gBot + 2, { h: gh * 0.66, kit: kits[sc.keeperKit == null ? 1 % kits.length : sc.keeperKit], depth: 10 }).ready();
         sc.keeperX = gx;
-        const sh = 150 * s;
-        sc.striker.destroy(); sc.striker = A.doll(sc, bx - 60 * s, by + 26 * s, { h: sh, kit: kits[api.turn()], depth: 13 }).idle();
-        sc.ball.setPosition(bx, by - 17 * s).setScale(s * 0.55).setAngle(0);
-        sc.shadow.setPosition(bx, by + 2).setSize(38 * s, 13 * s);
-        sc.badge.setPosition(bx - 60 * s, by + 26 * s - sh - 22 * s);
-        sc.badge.setFontSize(Math.max(28, 30 * s) + 'px');
-        sc.badge.setText(labels[api.turn()] || '');
-        if (free) sc.badge.setText('');
+        sc.striker.destroy(); sc.striker = A.doll(sc, bx - 60 * s, by + 26 * s, { h: 150 * s, kit: kits[api.turn()], depth: 13 }).idle();
+        return L;
+      }
 
-        sc.buildZones();
+      heroTex(pose) {
+        const sc = this, ch = sc.heroChar || 'boy', key = A.artKey(ch, pose);
+        if (A.kitMode !== 'shift' || !sc.heroKit) return key;
+        const hex = sc.heroKit.join('').replace(/#/g, '');
+        return A.recolorKit(sc, key, key + '|' + hex, A.KIT_RANGE.hero, sc.heroKit);
+      }
+      keeperTex(pose) {
+        const sc = this, key = A.artKey('keeper', pose);
+        if (A.kitMode !== 'shift' || !sc.keeperKitC) return key;
+        const hex = sc.keeperKitC.join('').replace(/#/g, '');
+        return A.recolorKit(sc, key, key + '|' + hex, A.KIT_RANGE.keeper, sc.keeperKitC);
+      }
+      heroPose(pose) { const sc = this; if (!sc.art) return; sc.hero.setTexture(sc.heroTex(pose)); }
+      keeperPose(pose, flip) { const sc = this; if (!sc.art) return; sc.keeperImg.setTexture(sc.keeperTex(pose)); sc.keeperImg.setFlipX(!!flip); }
+       
+      drawRings() {
+        const sc = this, g = sc.ringG, L = sc.sc; if (!g) return; g.clear();
+        if (A.kitMode !== 'ring' || !L.W) return;
+        const hk = sc.heroKit || kits[api.turn()], kk = sc.keeperKitC || kits[(api.turn() + 1) % kits.length];
+        g.lineStyle(Math.max(4, 7 * L.s), A.hex(hk[0]), 0.95); g.strokeEllipse(L.heroX, L.heroY - 2, L.heroH * 0.42, L.heroH * 0.12);
+        g.lineStyle(Math.max(3, 5 * L.s), A.hex(kk[0]), 0.95); g.strokeEllipse(sc.keeperX, L.gBot + L.gh * 0.02, L.keepH * 0.46, L.keepH * 0.11);
       }
 
       buildZones() {
@@ -256,32 +340,31 @@
         sc.zones.forEach(z => { if (z.txt) z.txt.destroy(); });
         sc.zones = [];
         if (!n) { sc.plateG.clear(); sc.hlG.clear(); return; }
-        const x0 = L.gx - L.gw / 2 + L.pad * 1.6, x1 = L.gx + L.gw / 2 - L.pad * 1.6, y0 = L.gTop + L.pad * 1.4, y1 = L.gBot - L.pad * 2.2;
+        const inset = sc.art ? L.gw * 0.035 : L.pad * 1.6;
+        const x0 = L.gx - L.gw / 2 + inset, x1 = L.gx + L.gw / 2 - inset, y0 = L.gTop + (sc.art ? L.gh * 0.06 : L.pad * 1.4), y1 = L.gBot - (sc.art ? L.gh * 0.08 : L.pad * 2.2);
          
         const gap = 8 * s, W = x1 - x0, H = y1 - y0;
-        const lane = Math.max(L.gh * 0.62 * 0.36, W * 0.16);            
+        const lane = Math.max((sc.art ? L.keepH * 0.36 : L.gh * 0.62 * 0.36), W * 0.16);
         const side = (W - lane - gap * 2) / 2;
         let rects = [];
         if (n === 2) rects = [{ x: x0, y: y0, w: side + lane * 0.25, h: H }, { x: x1 - side - lane * 0.25, y: y0, w: side + lane * 0.25, h: H }];
         else if (n === 3) {
-           
           const mid = Math.max(lane, W * 0.38), sd = (W - mid - gap * 2) / 2;
           rects = [{ x: x0, y: y0, w: sd, h: H }, { x: x0 + sd + gap, y: y0, w: mid, h: H * 0.44 }, { x: x1 - sd, y: y0, w: sd, h: H }];
         }
         else { const h = (H - gap) / 2;
           rects = [{ x: x0, y: y0, w: side, h }, { x: x1 - side, y: y0, w: side, h }, { x: x0, y: y0 + h + gap, w: side, h }, { x: x1 - side, y: y0 + h + gap, w: side, h }]; }
-         
         rects = n <= 3 ? rects.reverse() : [rects[1], rects[0], rects[3], rects[2]];
-        const fs = Math.max(30, Math.round(36 * s));
+        const fs = Math.max(sc.art ? 32 : 30, Math.round((sc.art ? 40 : 36) * s));
         rects.forEach((r, k) => {
           const z = { idx: k, x: r.x, y: r.y, w: r.w, h: r.h, cx: r.x + r.w / 2, cy: r.y + r.h / 2, st: '' };
           if (!free) {
-             
             const maxW = Math.max(40, r.w - 18 * s), maxH = r.h - 10 * s;
-            z.txt = sc.add.text(z.cx, z.cy, q.a[k], {
-              fontFamily: A.FONT_DISPLAY, fontSize: fs + 'px', color: '#0b1f2e', align: 'center', rtl: true,
+             
+            z.txt = sc.add.text(z.cx, z.cy, q.a[k], Object.assign({
+              fontFamily: A.FONT_DISPLAY, fontSize: fs + 'px', align: 'center', rtl: true,
               wordWrap: { width: maxW, useAdvancedWrap: false },
-            }).setOrigin(0.5).setDepth(8);
+            }, sc.art ? { color: '#ffffff', stroke: '#0b1f2e', strokeThickness: Math.max(6, 8 * s) } : { color: '#0b1f2e' })).setOrigin(0.5).setDepth(8);
             for (let pass = 0; pass < 3 && (z.txt.width > maxW + 1 || z.txt.height > maxH); pass++) {
               const cur = parseFloat(z.txt.style.fontSize);
               const next = Math.max(20, Math.floor(cur * Math.min(maxW / z.txt.width, maxH / z.txt.height) * 0.98));
@@ -300,20 +383,26 @@
         const sc = this, g = sc.plateG, s = sc.sc.s; g.clear();
         sc.zones.forEach(z => {
           const fill = z.st === 'ok' ? PAL.good : z.st === 'no' ? PAL.bad : PAL.plate;
-          g.fillStyle(PAL.ink, 0.35); g.fillRoundedRect(z.x + 4 * s, z.y + 5 * s, z.w, z.h, 14 * s);
-          g.fillStyle(fill, z.st ? 1 : 0.94); g.fillRoundedRect(z.x, z.y, z.w, z.h, 14 * s);
-          g.lineStyle(4 * s, PAL.ink, 1); g.strokeRoundedRect(z.x, z.y, z.w, z.h, 14 * s);
-          if (free) {  
+          if (sc.art) {
+             
+            g.fillStyle(fill, z.st ? 0.62 : 0.13); g.fillRoundedRect(z.x, z.y, z.w, z.h, 12 * s);
+            g.lineStyle(Math.max(2, 3 * s), z.st ? fill : 0xffffff, z.st ? 1 : 0.85); g.strokeRoundedRect(z.x, z.y, z.w, z.h, 12 * s);
+          } else {
+            g.fillStyle(PAL.ink, 0.35); g.fillRoundedRect(z.x + 4 * s, z.y + 5 * s, z.w, z.h, 14 * s);
+            g.fillStyle(fill, z.st ? 1 : 0.94); g.fillRoundedRect(z.x, z.y, z.w, z.h, 14 * s);
+            g.lineStyle(4 * s, PAL.ink, 1); g.strokeRoundedRect(z.x, z.y, z.w, z.h, 14 * s);
+            if (z.txt) z.txt.setColor(z.st ? '#ffffff' : '#0b1f2e');
+          }
+          if (free) {
             g.lineStyle(5 * s, z.st === 'ok' ? 0xffffff : PAL.bad, 0.9); g.strokeCircle(z.cx, z.cy, Math.min(z.w, z.h) * 0.3);
             g.strokeCircle(z.cx, z.cy, Math.min(z.w, z.h) * 0.15);
           }
-          if (z.txt) z.txt.setColor(z.st ? '#ffffff' : '#0b1f2e');
         });
       }
       drawHl() {
         const sc = this, g = sc.hlG, s = sc.sc.s; g.clear();
         const z = sc.zones[sc.hl]; if (!z || sc.state !== 'aim') return;
-        g.lineStyle(7 * s, PAL.sun, 1); g.strokeRoundedRect(z.x - 5 * s, z.y - 5 * s, z.w + 10 * s, z.h + 10 * s, 18 * s);
+        g.lineStyle(Math.max(4, 7 * s), PAL.sun, 1); g.strokeRoundedRect(z.x - 5 * s, z.y - 5 * s, z.w + 10 * s, z.h + 10 * s, 16 * s);
       }
       setHl(k) { this.hl = k; this.drawHl(); }
 
@@ -356,14 +445,13 @@
         if (!q) return sc.endRound();
         api.step(i, api.qs.length);
         F.q.textContent = q.q;
-        sc.resetBall();
-        sc.buildZones();
         sc.keeperKit = (api.turn() + 1) % kits.length;
         sc.recolor();
+        sc.resetBall();
+        sc.buildZones();
         sc.timeLeft = level.secs * 1000; sc.timeMax = sc.timeLeft;
-        F.timer.hidden = false; F.timer.classList.remove('is-low'); sc.tick(0);
+        F.timer.hidden = false; F.timer.style.visibility = ''; F.timer.classList.remove('is-low'); sc.tick(0);
         sc.state = 'aim'; sc.drawHl();
-         
         if (sc.bonus() > 2) api.say('ضربة الفرصة — الهدف بثلاث نقاط', 'good');
       }
       bonus() {
@@ -375,25 +463,43 @@
         if (sc.pendingLayout) { sc.pendingLayout = false; sc.layout(); }
         F.q.textContent = 'تسديد حرّ — سدّد على أي زاوية' + (sc.freeGoals ? ' · أهدافك ' + AR(sc.freeGoals) : '');
         F.timer.hidden = true;
+        sc.keeperKit = 1 % kits.length;
+        sc.recolor();
         sc.resetBall(); sc.buildZones();
         sc.state = 'aim'; sc.drawHl();
       }
       resetBall() {
-        const sc = this, L = sc.sc, s = L.s;
+        const sc = this, L = sc.sc;
         sc.tweens.killTweensOf(sc.ball); sc.tweens.killTweensOf(sc.shadow);
-        sc.ball.setPosition(L.bx, L.by - 17 * s).setScale(s * 0.55).setAngle(0).setAlpha(1);
+        sc.ball.setPosition(L.bx, L.by - L.ballR).setScale(L.ballR / 60).setAngle(0).setAlpha(1).setVisible(true);
         sc.shadow.setPosition(L.bx, L.by + 2).setAlpha(0.28);
         sc.zones.forEach(z => { z.st = ''; });
       }
        
       recolor() {
-        const sc = this, L = sc.sc, s = L.s;
-        const t = api.turn();
+        const sc = this, L = sc.sc, s = L.s, t = api.turn();
+        sc.heroKit = kits[t]; sc.keeperKitC = kits[sc.keeperKit == null ? (t + 1) % kits.length : sc.keeperKit];
+        if (sc.art) {
+          const ch = free ? A.hero.pick(sc.freeGoals) : A.hero.pick(sc.qi);
+          sc.heroChar = ch;
+          sc.tweens.killTweensOf(sc.hero); sc.tweens.killTweensOf(sc.keeperImg);
+          sc.heroPose('ready');
+          sc.hero.setPosition(L.heroX, L.heroY).setAlpha(1).setAngle(0).setScale(L.heroH / sc.hero.height);
+          sc.smear.setScale(L.heroH / sc.hero.height);
+          sc.keeperPose('ready', false);
+          L.keepScale = L.keepH / sc.keeperImg.height;
+          sc.keeperImg.setPosition(L.gx, L.gBot + L.gh * 0.02).setScale(L.keepScale).setAlpha(1); sc.keeperX = L.gx;
+          sc.smear.setVisible(false).setAlpha(0);
+          sc.drawRings();
+           
+          sc.breath = sc.tweens.add({ targets: sc.hero, scaleY: sc.hero.scaleY * 1.012, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+          sc.keepBob = sc.tweens.add({ targets: sc.keeperImg, scaleY: sc.keeperImg.scaleY * 1.03, scaleX: sc.keeperImg.scaleX * 0.99, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+          return;
+        }
         const sh = 150 * s;
         sc.striker.destroy(); sc.striker = A.doll(sc, L.bx - 60 * s, L.by + 26 * s, { h: sh, kit: kits[t], depth: 13 }).idle();
-        sc.keeper.destroy(); sc.keeper = A.doll(sc, L.gx, L.gBot + 2, { h: L.gh * 0.66, kit: kits[sc.keeperKit == null ? (t + 1) % kits.length : sc.keeperKit], depth: 10 }).ready();
+        sc.keeper.destroy(); sc.keeper = A.doll(sc, L.gx, L.gBot + 2, { h: L.gh * 0.66, kit: sc.keeperKitC, depth: 10 }).ready();
         sc.keeperX = L.gx;
-        sc.badge.setPosition(L.bx - 60 * s, L.by + 26 * s - sh - 22 * s).setText(free ? '' : (labels[t] || ''));
       }
 
       update(t, dt) {
@@ -401,9 +507,16 @@
         const d = dt * (sc.slow || 1);
         if (sc.state === 'aim' || sc.state === 'idle') {
           sc.kt += d;
-          const amp = L.gw / 2 - L.gh * 0.66 * 0.3 - L.pad;
+          const half = sc.art ? L.keepH * 0.2 : L.gh * 0.66 * 0.3;
+          const amp = L.gw / 2 - half - L.pad;
           const x = sc.frozen ? L.gx : L.gx + Math.sin(sc.kt / 1000 * Math.PI * 2 / sc.period) * amp;
-          sc.keeperX = x; sc.keeper.c.x = x;
+          sc.keeperX = x;
+          if (sc.art) { sc.keeperImg.x = x; if (A.kitMode === 'ring') sc.drawRings(); } else sc.keeper.c.x = x;
+        }
+        if (sc.smearOn && sc.art) {
+           
+          sc.smear.setVisible(true).setAlpha(0.28).setTexture(sc.hero.texture.key).setFlipX(sc.hero.flipX);
+          sc.smear.x = sc.hero.x - 14 * L.s; sc.smear.y = sc.hero.y; sc.smear.scaleX = sc.hero.scaleX * 1.18; sc.smear.scaleY = sc.hero.scaleY * 0.98;
         }
         if (sc.state === 'aim' && !free) {
           sc.timeLeft -= d;
@@ -421,75 +534,101 @@
         const sc = this, L = sc.sc, s = L.s;
         if (sc.state !== 'aim') return;
         const z = sc.zones[k]; if (!z) return;
-        sc.state = 'shot'; sc.hlG.clear(); F.timer.hidden = true;
+        sc.state = 'shot'; sc.hlG.clear(); F.timer.style.visibility = 'hidden';
         const q = free ? null : api.qs[sc.qi];
         const correct = free ? true : (k === q.c);
         const turn = api.turn();
-         
         const kx = sc.keeperX, dx = z.cx - kx, reach = level.reach * L.gw;
         const reads = rnd() < level.react;
         const saved = correct && (Math.abs(dx) <= reach || (reads && Math.abs(dx) <= reach * 2.3));
         const dir = dx >= 0 ? 1 : -1;
         const flight = level.flight;
-
+        const high = z.cy < L.gTop + L.gh * 0.5;
         api.sfx('turn');
-        sc.striker.run();
-        sc.tweens.add({ targets: sc.striker.c, x: L.bx - 22 * s, y: L.by + 10 * s, duration: 280, ease: 'Quad.easeIn', onComplete: () => {
-          sc.striker.kick();
+
+        const launch = () => {
           api.sfx('pop');
-           
           const x0 = sc.ball.x, y0 = sc.ball.y, x1 = z.cx, y1 = z.cy;
-          const arc = 90 * s * (z.cy < L.gTop + L.gh / 2 ? 1.3 : 0.8);
+          const arc = 90 * s * (high ? 1.3 : 0.8);
+          const base0 = L.ballR / 60;
           sc.tweens.addCounter({ from: 0, to: 1, duration: flight, ease: 'Sine.easeOut',
             onUpdate: tw => { const p = tw.getValue();
               sc.ball.x = x0 + (x1 - x0) * p; sc.ball.y = y0 + (y1 - y0) * p - Math.sin(Math.PI * p) * arc;
-               
-              const base = s * (0.55 - 0.22 * p), sq = Math.max(0, 1 - p * 5);
+              const base = base0 * (1 - 0.42 * p), sq = Math.max(0, 1 - p * 5);
               sc.ball.setScale(base * (1 + 0.38 * sq), base * (1 - 0.34 * sq)); sc.ball.angle += 14;
               sc.shadow.x = sc.ball.x; sc.shadow.y = L.by + 2 + (L.gBot - L.by) * p; sc.shadow.setAlpha(0.28 * (1 - p * 0.7)); },
             onComplete: () => sc.land(z, correct, saved, turn) });
            
           const diveTo = saved ? (z.cx - kx) : (dir * reach * 0.8 * (reads ? -1 : 1));
-          sc.time.delayedCall(flight * 0.25, () => { if (sc.keeper) sc.keeper.dive(diveTo >= 0 ? 1 : -1, diveTo, flight * 0.7); });
-        } });
+          sc.time.delayedCall(flight * 0.2, () => {
+            if (sc.art) {
+              const centre = Math.abs(diveTo) < L.gw * 0.08;
+              sc.keeperPose(centre && high ? 'jump' : (high ? 'dive-high' : 'dive-low'), diveTo < 0);
+              if (sc.keepBob) sc.keepBob.stop();
+              sc.tweens.add({ targets: sc.keeperImg, x: kx + diveTo, y: L.gBot + L.gh * 0.02 - (high ? L.gh * 0.12 : L.gh * 0.02), duration: flight * 0.75, ease: 'Quad.easeOut' });
+            } else if (sc.keeper) sc.keeper.dive(diveTo >= 0 ? 1 : -1, diveTo, flight * 0.7);
+          });
+        };
+
+        if (sc.art) {
+          if (sc.breath) sc.breath.stop();
+           
+          sc.heroPose('runup'); sc.smearOn = true;
+          sc.tweens.add({ targets: sc.hero, x: L.bx - 0.035 * L.W, y: L.by + 0.012 * L.H, scaleY: sc.hero.scaleY * 0.97, duration: 260, ease: 'Quad.easeIn', onComplete: () => {
+            sc.heroPose('windup');
+            sc.tweens.add({ targets: sc.hero, scaleX: sc.hero.scaleX * 1.05, scaleY: sc.hero.scaleY * 1.02, duration: 110, ease: 'Sine.easeOut', onComplete: () => {
+              sc.heroPose('strike');
+              sc.tweens.add({ targets: sc.hero, scaleX: sc.hero.scaleX / 1.05, scaleY: sc.hero.scaleY / 1.02, duration: 140, ease: 'Back.easeOut' });
+              A.feel.hitstop(sc, 70, 0.08);       
+              sc.time.delayedCall(10, () => { launch(); sc.time.delayedCall(180, () => { sc.smearOn = false; sc.smear.setVisible(false); }); });
+            } });
+          } });
+          return;
+        }
+        sc.striker.run();
+        sc.tweens.add({ targets: sc.striker.c, x: L.bx - 22 * s, y: L.by + 10 * s, duration: 280, ease: 'Quad.easeIn', onComplete: () => { sc.striker.kick(); launch(); } });
       }
 
       land(z, correct, saved, turn) {
         const sc = this, L = sc.sc, s = L.s;
         const kit = kits[turn].map(A.hex);
+        const heroJoy = () => { if (sc.art) { sc.heroPose('celebrate'); sc.tweens.add({ targets: sc.hero, y: L.heroY - L.heroH * 0.18, duration: 240, yoyo: true, repeat: 2, ease: 'Quad.easeOut' }); } else sc.striker.joy(); };
+        const heroMiss = () => { if (sc.art) { sc.heroPose('miss'); sc.tweens.add({ targets: sc.hero, y: L.heroY + L.heroH * 0.02, duration: 260, ease: 'Sine.easeOut' }); } else sc.striker.miss(); };
+        const keeperJoy = () => { if (sc.art) { sc.keeperPose('save', sc.keeperImg.flipX); sc.tweens.add({ targets: sc.keeperImg, y: '-=' + (L.gh * 0.1), duration: 220, yoyo: true, repeat: 1, ease: 'Quad.easeOut' }); } else sc.keeper.joy(); };
+        const keeperMiss = () => { if (sc.art) sc.time.delayedCall(220, () => sc.keeperPose('beaten', false)); else sc.keeper.miss(); };
         if (!correct) {
-           
           z.st = 'no'; const c = api.qs[sc.qi].c; if (sc.zones[c]) sc.zones[c].st = 'ok';
           sc.drawPlates();
           A.feel.hitstop(sc, 70); A.feel.shake(sc, 140, 0.004);
           api.sfx('soft');
-          sc.tweens.add({ targets: sc.ball, x: z.cx + (rnd() - 0.5) * 120 * s, y: L.by - 90 * s, scale: s * 0.5, duration: 520, ease: 'Bounce.easeOut' });
+          sc.tweens.add({ targets: sc.ball, x: z.cx + (rnd() - 0.5) * 120 * s, y: L.by - 90 * s, scale: L.ballR / 60 * 0.9, duration: 520, ease: 'Bounce.easeOut' });
           sc.tweens.add({ targets: sc.shadow, x: z.cx, y: L.by - 10 * s, alpha: 0.2, duration: 520 });
           A.feel.burst(sc, z.cx, z.cy, [PAL.bad, 0xffffff], 14, { tex: 'ar-dot', vmin: 120, vmax: 260, s: 0.7, g: 700 });
           A.feel.pop(sc, L.gx, L.gBot + 60 * s, 'خطأ', { color: '#ffd5d5', fontSize: Math.max(44, 58 * s) + 'px' });
-          sc.striker.miss(); sc.keeper.joy();
+          heroMiss(); keeperJoy();
           sc.streak[turn] = 0;
           api.judge(false, { text: 'الصحيح: ' + api.qs[sc.qi].a[c] });
           return sc.after(1800);
         }
         if (saved) {
-           
           z.st = 'ok'; sc.drawPlates();
-          sc.tweens.add({ targets: sc.ball, x: sc.keeper.c.x, y: sc.keeper.c.y - L.gh * 0.45, scale: s * 0.36, duration: 160 });
+          const kx = sc.art ? sc.keeperImg.x : sc.keeper.c.x, ky = sc.art ? sc.keeperImg.y - L.keepH * 0.45 : sc.keeper.c.y - L.gh * 0.45;
+          sc.tweens.add({ targets: sc.ball, x: kx, y: ky, scale: L.ballR / 60 * 0.6, duration: 160 });
           sc.shadow.setAlpha(0);
           A.feel.hitstop(sc, 80); A.feel.shake(sc, 160, 0.005);
           A.feel.burst(sc, z.cx, z.cy, [0xffffff, PAL.sun], 12, { tex: 'ar-dot', vmin: 100, vmax: 240, s: 0.6, g: 600 });
-          A.feel.pop(sc, L.gx, L.gBot + 60 * s, 'تصدّى الحارس', { color: '#fff3c4', fontSize: Math.max(40, 50 * s) + 'px' });    
-          sc.keeper.joy(); sc.striker.miss();
+          A.feel.pop(sc, L.gx, L.gBot + 60 * s, 'تصدّى الحارس', { color: '#fff3c4', fontSize: Math.max(40, 50 * s) + 'px' });
+          keeperJoy(); heroMiss();
           if (!free) { api.score(turn, 1); api.judge(true, { text: 'صحيح — نقطة' }); sc.streak[turn]++; }
           else api.sfx('good');
           return sc.after(1700);
         }
          
         z.st = 'ok'; sc.drawPlates();
-        sc.tweens.add({ targets: sc.ball, y: z.cy + 14 * s, scale: s * 0.3, alpha: 0.85, duration: 180, ease: 'Sine.easeOut' });
+        sc.tweens.add({ targets: sc.ball, y: z.cy + 14 * s, scale: L.ballR / 60 * 0.5, alpha: 0.85, duration: 180, ease: 'Sine.easeOut' });
         sc.shadow.setAlpha(0);
-        sc.tweens.add({ targets: sc.netG, scaleX: 1.025, scaleY: 1.03, duration: 120, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
+        if (sc.art) sc.tweens.add({ targets: sc.netImg, scaleX: L.k * 1.02, scaleY: L.k * 1.03, duration: 110, yoyo: true, repeat: 3, ease: 'Sine.easeInOut' });
+        else sc.tweens.add({ targets: sc.netG, scaleX: 1.025, scaleY: 1.03, duration: 120, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
         A.feel.hitstop(sc, 95); A.feel.flash(sc, 110); A.feel.shake(sc, 220, 0.008);
         api.sfx('good');
         sc.time.delayedCall(60, () => {
@@ -497,12 +636,11 @@
           A.feel.burst(sc, L.gx, L.gTop, kit, 30, { a0: 20, a1: 160, vmin: 150, vmax: 380 });
         });
         sc.wave();
-        sc.striker.joy(); sc.keeper.miss();
+        heroJoy(); keeperMiss();
         sc.goals[turn]++;
         A.feel.pop(sc, L.gx, L.gBot + 60 * s, 'هدف!', { fontSize: Math.max(60, 84 * s) + 'px', color: '#fff9c4' });
         if (free) { sc.freeGoals++; return sc.after(1400); }
         sc.streak[turn]++;
-         
         const chain = sc.streak[turn] >= 3 ? 1 : 0;
         const pts = sc.bonus() + chain;
         api.score(turn, pts);
@@ -515,15 +653,14 @@
       }
       timeout() {
         const sc = this, L = sc.sc, s = L.s;
-        sc.state = 'shot'; sc.hlG.clear(); F.timer.hidden = true;
+        sc.state = 'shot'; sc.hlG.clear(); F.timer.style.visibility = 'hidden';
         const c = api.qs[sc.qi].c; if (sc.zones[c]) sc.zones[c].st = 'ok'; sc.drawPlates();
         A.feel.pop(sc, L.gx, L.gBot + 60 * s, 'انتهى الوقت', { color: '#ffd5d5', fontSize: Math.max(40, 52 * s) + 'px' });
-        sc.striker.miss(); sc.keeper.joy();
+        if (sc.art) { sc.heroPose('miss'); sc.keeperPose('save', false); } else { sc.striker.miss(); sc.keeper.joy(); }
         sc.streak[api.turn()] = 0;
         api.judge(false, { text: 'الصحيح: ' + api.qs[sc.qi].a[c] });
         sc.after(1800);
       }
-       
       wave() {
         const sc = this, s = sc.sc.s;
         sc.crowd.forEach((d, i) => {
@@ -536,7 +673,7 @@
           if (!sc.sys || !sc.sys.isActive()) return;
           if (free) { sc.period = Math.max(level.minPeriod, sc.period * 0.94); return sc.freeShot(); }
           api.nextTurn();
-          sc.period = Math.max(level.minPeriod, sc.period * 0.96);    
+          sc.period = Math.max(level.minPeriod, sc.period * 0.96);
           sc.qi++;
           if (sc.qi >= api.qs.length) { api.step(api.qs.length, api.qs.length); return sc.endRound(); }
           sc.ask(sc.qi);

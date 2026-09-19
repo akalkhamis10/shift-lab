@@ -380,7 +380,7 @@
 .ar-timer i{ display: block; height: 100%; background: var(--sea-teal); transform-origin: right center; transform: scaleX(1); }
 .ar-timer.is-low i{ background: var(--sea-coral); }
 .ar-host{ flex: 1 1 auto; min-height: 0; width: 100%; position: relative; overflow: hidden;
-  border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r); box-shadow: var(--sea-shadow-board); background: #1e78e0; }
+  border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r); box-shadow: var(--sea-shadow-board); background: var(--sea-ink); }
 .ar-mount{ position: absolute; inset: 0; }
 .ar-mount canvas{ display: block; }
 .ar-sheet{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1em;
@@ -983,7 +983,8 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
     function drawTop() {
       elStep.textContent = total ? ('سؤال ' + AR(Math.min(done + 1, total)) + ' من ' + AR(total)) : '';
       const t = teams[turn];
-      elTurn.innerHTML = t ? '<i style="background:' + t.color + '"></i>دور ' + esc(t.name) : '';
+       
+      elTurn.innerHTML = t ? '<i style="background:' + t.color + '"></i>دور ' + esc(t.name) + (t.tag ? ' · ' + esc(t.tag) : '') : '';
     }
     function drawTeams() {
       elTeams.innerHTML = '<div class="gp-tm">' + teams.map((t, i) =>
@@ -1079,6 +1080,8 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
       turn: () => turn,
       setTurn(i) { turn = ((i % teams.length) + teams.length) % teams.length; drawTop(); drawTeams(); },
       nextTurn() { api.setTurn(turn + 1); return turn; },
+       
+      setTag(i, tag) { const t = teams[i]; if (!t) return; t.tag = tag ? String(tag) : ''; drawTop(); },
       score(i, pts) {
         const t = teams[i]; if (!t) return 0;
         t.score = Math.max(0, (t.score || 0) + (pts | 0));
@@ -4958,7 +4961,7 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
        
       Promise.resolve()
         .then(() => (S.arcade && S.arcade.script) ? null : loadScript('arcade/core.js'))
-        .then(() => Promise.all([S.arcade.load(), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason()]))
+        .then(() => Promise.all([S.arcade.load(), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason(), S.arcade.loadArtMeta()]))
         .then(() => { if (!dead) inst = S.arcade.games.penalty.mount(el, api); })
         .catch(e => {
           console.warn('SHIFT: لم تُفتح ضربات الترجيح —', e && e.message);

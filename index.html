@@ -4561,7 +4561,7 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
        
       Promise.resolve()
         .then(() => (S.arcade && S.arcade.script) ? null : loadScript('arcade/core.js'))
-        .then(() => Promise.all([S.arcade.load(), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason()]))
+        .then(() => Promise.all([S.arcade.load(), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason(), S.arcade.loadArtMeta()]))
         .then(() => { if (!dead) inst = S.arcade.games.penalty.mount(el, api); })
         .catch(e => {
           console.warn('SHIFT: لم تُفتح ضربات الترجيح —', e && e.message);

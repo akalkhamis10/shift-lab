@@ -37,9 +37,12 @@
   };
    
   A.SEASON_FILES = ['arcade/season-gulf-2026.js'];
+  A.ART_META = 'arcade/art/meta.js';
   A.loadSeason = function () {
     return Promise.all(A.SEASON_FILES.map(f => A.script(f).catch(() => null))).then(() => A.season || null);
   };
+   
+  A.loadArtMeta = function () { return A.script(A.ART_META).catch(() => null).then(() => A.art || null); };
 
   const LEVEL_KEY = 'shift.arcade.level.v1';
   A.LEVELS = {
@@ -76,7 +79,7 @@
     const game = new P.Game({
       type: P.AUTO,
       parent: mount,
-      backgroundColor: opts.bg || '#1e78e0',
+      backgroundColor: opts.bg || '#2b2f4a',    
       scale: { mode: P.Scale.RESIZE, width: '100%', height: '100%', autoCenter: P.Scale.NO_CENTER, expandParent: false },
       render: { antialias: true, roundPixels: false, pixelArt: false },
       fps: { target: 60, forceSetTimeOut: false },
@@ -378,6 +381,79 @@
       const t = (season && season.teams || []).filter(x => x.name === name)[0];
       return t ? t.kit : null;
     },
+  };
+
+  A.artSet = function (w, h) {
+    const dpr = G.devicePixelRatio || 1;
+    return Math.max(w, h) * dpr > 1100 ? 'lg' : 'sm';
+  };
+  A.artKey = (char, pose) => 'art-' + char + '-' + pose;
+  A.preloadArt = function (scene, chars) {
+    const M = A.art; if (!M) return false;
+    const set = A.artSet(scene.scale.width || 1280, scene.scale.height || 720);
+    (chars || Object.keys(M.chars)).forEach(c => {
+      Object.keys(M.chars[c].poses).forEach(p => scene.load.image(A.artKey(c, p), 'arcade/art/' + c + '-' + p + '-' + set + '.webp'));
+    });
+    if (M.bg) scene.load.image('art-bg', 'arcade/art/stadium-bg-' + set + '.webp');
+    scene.load.on('loaderror', f => { A.artMissing = true; console.warn('SHIFT: أصل فنّي لم يصل —', f && f.key); });
+    return true;
+  };
+  A.artReady = function (scene, chars) {
+    const M = A.art; if (!M || A.artMissing) return false;
+    return (chars || Object.keys(M.chars)).every(c => Object.keys(M.chars[c].poses).every(p => scene.textures.exists(A.artKey(c, p))))
+      && (!M.bg || scene.textures.exists('art-bg'));
+  };
+
+  A.recolorKit = function (scene, srcKey, dstKey, range, kit) {
+    if (scene.textures.exists(dstKey)) return dstKey;
+    if (!scene.textures.exists(srcKey)) return srcKey;
+    const src = scene.textures.get(srcKey).getSourceImage();
+    const w = src.width, h = src.height;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(src, 0, 0);
+    const img = ctx.getImageData(0, 0, w, h), d = img.data;
+    let hex = kit[0]; if (lum(hex) > 0.86 && kit[1]) hex = kit[1];
+    const t = hsl(P2H(hex));
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 8) continue;
+      const c = hsl((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+      if (c.s < range.sMin || c.l < 0.12 || c.l > 0.93) continue;
+      const dh = Math.abs(((c.h - range.h + 540) % 360) - 180);
+      if (dh > range.tol) continue;
+       
+      const rgb = fromHsl(t.h, Math.min(1, t.s * 0.95 + 0.05), Math.min(0.96, c.l * (0.85 + 0.3 * t.l)));
+      d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2];
+    }
+    ctx.putImageData(img, 0, 0);
+    scene.textures.addCanvas(dstKey, cv);
+    return dstKey;
+  };
+  A.KIT_RANGE = { hero: { h: 212, tol: 32, sMin: 0.3 }, keeper: { h: 48, tol: 22, sMin: 0.45 } };
+  function hsl(n) {
+    const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
+    if (max === min) return { h: 0, s: 0, l };
+    const dd = max - min, s = l > 0.5 ? dd / (2 - max - min) : dd / (max + min);
+    let h = max === r ? (g - b) / dd + (g < b ? 6 : 0) : max === g ? (b - r) / dd + 2 : (r - g) / dd + 4;
+    return { h: h * 60, s, l };
+  }
+  function fromHsl(h, s, l) {
+    const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+  }
+  function lum(hex) { const n = P2H(hex); return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255; }
+   
+  A.kitMode = (function () { try { return sessionStorage.getItem('shift.arcade.kit') === 'ring' ? 'ring' : 'shift'; } catch (e) { return 'shift'; } })();
+
+  const HERO_KEY = 'shift.arcade.hero.v1';
+  A.hero = {
+    get() { try { const v = localStorage.getItem(HERO_KEY); return v === 'boy' || v === 'girl' ? v : 'auto'; } catch (e) { return 'auto'; } },
+    set(v) { try { localStorage.setItem(HERO_KEY, v); } catch (e) { console.warn('SHIFT: تعذّر حفظ اختيار الهدّاف —', e && e.message); } },
+    pick(i) { const v = A.hero.get(); return v === 'auto' ? (i % 2 ? 'girl' : 'boy') : v; },
   };
 
   A.games = A.games || {};
