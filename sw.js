@@ -1,8 +1,9 @@
-/* SHIFT — حصة صفّية · نسخة 966a2d9a */
-const CACHE = 'shift-class-966a2d9a';
+/* SHIFT — حصة صفّية · نسخة 62fce88f */
+const CACHE = 'shift-class-62fce88f';
 const FILES = ['./', './index.html', './play.html', './report.html', './lessons.html', './game.html',
   './fonts-sea.css', './figures.js', './lessons-figures.js', './manifest.webmanifest',
   "./kw/bg-classroom.webp","./kw/boy-happy-lg.webp","./kw/boy-happy-sm.webp","./kw/girl-happy-lg.webp","./kw/girl-happy-sm.webp","./kw/girl-thinking-lg.webp","./kw/girl-thinking-sm.webp","./kw/og-card.jpg","./kw/pack.js","./kw/teacher-main-lg.webp","./kw/teacher-main-sm.webp",
+  "./arcade/core.js","./arcade/penalty.js","./arcade/season-gulf-2026.js","./vendor/phaser-4.2.1.iife.js",
   './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

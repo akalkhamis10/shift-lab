@@ -373,6 +373,50 @@
 .gw-board{ width: 100%; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
 .gw-board svg{ width: 100%; height: 100%; max-height: 100%; display: block; }
 
+.gp-stage.is-arcade{ gap: .4em; }
+.ar-q{ flex: none; margin: 0; }
+.ar-timer{ flex: none; width: min(100%, 40em); height: 12px; border-radius: 999px; overflow: hidden;
+  background: var(--sea-white); border: 2px solid var(--sea-ink); }
+.ar-timer i{ display: block; height: 100%; background: var(--sea-teal); transform-origin: right center; transform: scaleX(1); }
+.ar-timer.is-low i{ background: var(--sea-coral); }
+.ar-host{ flex: 1 1 auto; min-height: 0; width: 100%; position: relative; overflow: hidden;
+  border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r); box-shadow: var(--sea-shadow-board); background: #1e78e0; }
+.ar-mount{ position: absolute; inset: 0; }
+.ar-mount canvas{ display: block; }
+.ar-sheet{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1em;
+  background: rgba(11, 60, 73, .58); z-index: 5; overflow: auto; }
+.ar-sheet[hidden]{ display: none; }
+.ar-card{ width: min(34em, 100%); }
+.ar-levels{ display: flex; flex-direction: row; flex-wrap: wrap; gap: .5em; justify-content: center; }
+.ar-levels .gp-b{ flex: 1 1 28%; }
+.ar-wait{ font-size: 1em; }
+
+.ar-draw{ display: grid; grid-template-columns: repeat(auto-fit, minmax(9em, 1fr)); gap: .7em; margin: .4em 0; }
+.ar-cardflip{ position: relative; height: 6.2em; transform-style: preserve-3d; animation: arFlip .7s var(--d, .4s) both cubic-bezier(.2,.8,.2,1); }
+.ar-face{ position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2em;
+  border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r-sm); box-shadow: var(--sea-shadow);
+  backface-visibility: hidden; font-family: var(--sea-display); font-weight: 800; font-size: 1.1em; }
+.ar-back{ background: var(--sea-sand); color: var(--sea-ink); }
+.ar-back i{ width: 1em; height: 1em; border-radius: 50%; border: 2px solid var(--sea-ink); }
+.ar-front{ transform: rotateY(180deg); }
+.ar-front b{ font-size: 1.35em; line-height: 1.1; }
+.ar-front small{ font-family: var(--sea-text); font-weight: 600; font-size: .75em; opacity: .9; }
+@keyframes arFlip{ from{ transform: rotateY(0); } to{ transform: rotateY(180deg); } }
+
+.ar-table{ width: 100%; border-collapse: collapse; font-size: .85em; margin: .3em 0; }
+.ar-table th, .ar-table td{ padding: .3em .35em; text-align: center; border-bottom: 2px solid var(--sea-faint); }
+.ar-table th:first-child, .ar-table td:first-child{ text-align: start; }
+.ar-table th{ font-weight: 700; color: var(--sea-sub); }
+.ar-table tr.mine td{ background: var(--sea-sun); }
+@media (prefers-reduced-motion: reduce){ .ar-cardflip{ animation: none; transform: rotateY(180deg); } }
+
+.gp-tool{ min-width: 44px; justify-content: center; }
+
+.gp-arcade{ position: relative; }
+.gp-arcade .gp-say{ position: absolute; left: 50%; right: auto; bottom: calc(var(--gp-pad) + 3.4em);
+  width: max-content; max-width: 88%; z-index: 6; transform: translate(-50%, .6em); }
+.gp-arcade .gp-say.on{ transform: translate(-50%, 0); }
+
 </style>
 </head>
 <body style="margin:0;background:#fbf3e4">
@@ -677,9 +721,11 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
   const MUST = ['id', 'name', 'line', 'comeback', 'kind', 'keys'];
 
   const KEY_SETS = {
-    verb:     ['اختيار', 'سحب وفرز', 'توقيت ضغطة', 'رسم', 'حركة جسد', 'رهان'],
+     
+    verb:     ['اختيار', 'سحب وفرز', 'توقيت ضغطة', 'رسم', 'حركة جسد', 'رهان', 'تصويب'],
     relation: ['فرق ضد فرق', 'الفصل ضد الوقت', 'الفصل ضد المعلّم'],
-    second:   ['اقتصاد', 'بناء', 'أرض', 'مطاردة', 'كشف', 'حظّ', 'لا شيء'],
+     
+    second:   ['اقتصاد', 'بناء', 'أرض', 'مطاردة', 'كشف', 'حظّ', 'لا شيء', 'سلسلة'],
     form:     ['سؤال بخيارات', 'أزواج', 'بطاقة حكم', 'قائمة مصطلحات'],
   };
    
@@ -4874,6 +4920,58 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
 
       draw();
       return { destroy() { locked = true; } };
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  S.games.define({
+    kind: 'حركة',
+     
+    keys: { verb: 'تصويب', relation: 'فرق ضد فرق', second: 'سلسلة', form: 'سؤال بخيارات' },
+    id: 'penalty',
+    name: 'ضربات الترجيح',
+    line: 'زوايا المرمى تحمل الإجابات، والحارس يتحرّك — سدّد على الصحيحة.',
+    mins: [8, 14],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 4,
+    comeback: 'المتأخّر بثلاث نقاط يصير هدفه بثلاث نقاط، والسلسلة تُكافأ',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="4" y="6" width="112" height="68" rx="10" fill="#2f9e4f" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="22" y="16" width="76" height="30" rx="3" fill="#ffffff" fill-opacity=".25" stroke="#ffffff" stroke-width="4"/>' +
+        '<rect x="26" y="20" width="30" height="22" rx="4" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="64" y="20" width="30" height="22" rx="4" fill="#ffffff" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<circle cx="60" cy="62" r="7" fill="#ffffff" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      const A = () => S.arcade;
+      let inst = null, dead = false;
+      el.innerHTML = '<p class="gw-sub ar-wait">تُجهَّز اللعبة…</p>';
+       
+      Promise.resolve()
+        .then(() => (S.arcade && S.arcade.script) ? null : loadScript('arcade/core.js'))
+        .then(() => Promise.all([S.arcade.load(), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason()]))
+        .then(() => { if (!dead) inst = S.arcade.games.penalty.mount(el, api); })
+        .catch(e => {
+          console.warn('SHIFT: لم تُفتح ضربات الترجيح —', e && e.message);
+          if (!dead) el.innerHTML = '<div class="gp-card"><h1>لم تُفتح اللعبة</h1><p class="gp-sub">تعذّر تحميل محرّك الحركة على هذا الجهاز. جرّب إعادة الفتح، أو بدّل اللعبة بالأسئلة نفسها.</p></div>';
+        });
+      function loadScript(src) {
+        return new Promise((res, rej) => {
+          const s = document.createElement('script'); s.src = src; s.async = true;
+          s.onload = () => res(src); s.onerror = () => rej(new Error('تعذّر تحميل ' + src));
+          document.head.appendChild(s);
+        });
+      }
+      return { destroy() { dead = true; if (inst) inst.destroy(); } };
     },
   });
 })();

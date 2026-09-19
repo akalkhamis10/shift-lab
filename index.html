@@ -519,9 +519,11 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
   const MUST = ['id', 'name', 'line', 'comeback', 'kind', 'keys'];
 
   const KEY_SETS = {
-    verb:     ['اختيار', 'سحب وفرز', 'توقيت ضغطة', 'رسم', 'حركة جسد', 'رهان'],
+     
+    verb:     ['اختيار', 'سحب وفرز', 'توقيت ضغطة', 'رسم', 'حركة جسد', 'رهان', 'تصويب'],
     relation: ['فرق ضد فرق', 'الفصل ضد الوقت', 'الفصل ضد المعلّم'],
-    second:   ['اقتصاد', 'بناء', 'أرض', 'مطاردة', 'كشف', 'حظّ', 'لا شيء'],
+     
+    second:   ['اقتصاد', 'بناء', 'أرض', 'مطاردة', 'كشف', 'حظّ', 'لا شيء', 'سلسلة'],
     form:     ['سؤال بخيارات', 'أزواج', 'بطاقة حكم', 'قائمة مصطلحات'],
   };
    
@@ -4521,6 +4523,58 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
         '<rect x="52" y="44" width="16" height="28" rx="3" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
         '<rect x="74" y="44" width="16" height="28" rx="3" fill="var(--sea-ink)"/>' +
         '</svg>';
+    },
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const S = (typeof window !== 'undefined' ? window : globalThis).SHIFT;
+  S.games.define({
+    kind: 'حركة',
+     
+    keys: { verb: 'تصويب', relation: 'فرق ضد فرق', second: 'سلسلة', form: 'سؤال بخيارات' },
+    id: 'penalty',
+    name: 'ضربات الترجيح',
+    line: 'زوايا المرمى تحمل الإجابات، والحارس يتحرّك — سدّد على الصحيحة.',
+    mins: [8, 14],
+    teams: { min: 2, max: 4 },
+    need: { min: 2, max: 4 },
+    minQ: 4,
+    comeback: 'المتأخّر بثلاث نقاط يصير هدفه بثلاث نقاط، والسلسلة تُكافأ',
+
+    art() {
+      return '<svg viewBox="0 0 120 80" aria-hidden="true">' +
+        '<rect x="4" y="6" width="112" height="68" rx="10" fill="#2f9e4f" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '<rect x="22" y="16" width="76" height="30" rx="3" fill="#ffffff" fill-opacity=".25" stroke="#ffffff" stroke-width="4"/>' +
+        '<rect x="26" y="20" width="30" height="22" rx="4" fill="var(--sea-sun)" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<rect x="64" y="20" width="30" height="22" rx="4" fill="#ffffff" stroke="var(--sea-ink)" stroke-width="2.5"/>' +
+        '<circle cx="60" cy="62" r="7" fill="#ffffff" stroke="var(--sea-ink)" stroke-width="3"/>' +
+        '</svg>';
+    },
+
+    mount(el, api) {
+      const A = () => S.arcade;
+      let inst = null, dead = false;
+      el.innerHTML = '<p class="gw-sub ar-wait">تُجهَّز اللعبة…</p>';
+       
+      Promise.resolve()
+        .then(() => (S.arcade && S.arcade.script) ? null : loadScript('arcade/core.js'))
+        .then(() => Promise.all([S.arcade.load(), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason()]))
+        .then(() => { if (!dead) inst = S.arcade.games.penalty.mount(el, api); })
+        .catch(e => {
+          console.warn('SHIFT: لم تُفتح ضربات الترجيح —', e && e.message);
+          if (!dead) el.innerHTML = '<div class="gp-card"><h1>لم تُفتح اللعبة</h1><p class="gp-sub">تعذّر تحميل محرّك الحركة على هذا الجهاز. جرّب إعادة الفتح، أو بدّل اللعبة بالأسئلة نفسها.</p></div>';
+        });
+      function loadScript(src) {
+        return new Promise((res, rej) => {
+          const s = document.createElement('script'); s.src = src; s.async = true;
+          s.onload = () => res(src); s.onerror = () => rej(new Error('تعذّر تحميل ' + src));
+          document.head.appendChild(s);
+        });
+      }
+      return { destroy() { dead = true; if (inst) inst.destroy(); } };
     },
   });
 })();
