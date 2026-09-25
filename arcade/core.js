@@ -496,7 +496,8 @@
         const lp = Snd.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
         Snd.crowdGain = Snd.ctx.createGain(); Snd.crowdGain.gain.value = 0.0;
         src.connect(lp); lp.connect(Snd.crowdGain); Snd.crowdGain.connect(Snd.master); src.start();
-        Snd.crowd = { src, lp };
+         
+        Snd.bed = { src, lp };
       } catch (e) { Snd.ctx = null; }
       return Snd.ctx;
     },
@@ -547,7 +548,7 @@
       const c = Snd.ok(); if (!c) return;
       Snd.crowd(peak == null ? 0.9 : peak, 0.25);
       const t = c.currentTime;
-      if (Snd.crowd && Snd.crowd.lp) { Snd.crowd.lp.frequency.cancelScheduledValues(t); Snd.crowd.lp.frequency.setValueAtTime(900, t); Snd.crowd.lp.frequency.linearRampToValueAtTime(2600, t + 0.3); Snd.crowd.lp.frequency.linearRampToValueAtTime(900, t + (hold || 2.2)); }
+      if (Snd.bed && Snd.bed.lp) { const lp = Snd.bed.lp; lp.frequency.cancelScheduledValues(t); lp.frequency.setValueAtTime(900, t); lp.frequency.linearRampToValueAtTime(2600, t + 0.3); lp.frequency.linearRampToValueAtTime(900, t + (hold || 2.2)); }
       setTimeout(() => Snd.crowd(0.08, 1.6), (hold || 2.2) * 1000);
        
       [0, 0.12, 0.24].forEach((dt, i) => { const o = c.createOscillator(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.value = 330 + i * 60;
@@ -569,6 +570,13 @@
     ambient() { Snd.crowd(0.08, 1.0); },
     quiet() { if (Snd.crowdGain) Snd.crowd(0.0001, 0.4); },
   };
+   
+  Object.keys(Snd).forEach(k => {
+    const f = Snd[k];
+    if (typeof f !== 'function' || k === 'on') return;
+    Snd[k] = function () { try { return f.apply(Snd, arguments); } catch (e) { console.warn('SHIFT: الصوت —', (e && e.message) || e); } };
+  });
+
   A.sound = Snd;
 
   A.games = A.games || {};
