@@ -799,7 +799,29 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
     prep(items, id, seed) {
       const g = BY[id]; if (!g) return [];
       const ok = (items || []).filter(it => Games.fits(it, id));
-      return Games.shuffle(ok, seed);
+       
+      const cyc = {};
+      return Games.shuffle(ok, seed).map(it => {
+        const n = ((it && it.a) || []).length;
+        if (n < 2) return it;
+        const c = cyc[n] || (cyc[n] = { k: 0, order: Games.shuffle(Array.from({ length: n }, (_, i) => i), Games.seed(seed + '|ن' + n)) });
+        const want = c.order[c.k % n];
+        c.k++;
+        if (c.k % n === 0) c.order = Games.shuffle(c.order, Games.seed(seed + '|ن' + n + '|' + c.k));
+        return Games.spin(it, seed, want);
+      });
+    },
+
+    spin(item, seed, want) {
+      const a = (item && item.a) || [], n = a.length;
+      if (n < 2 || !(item.c >= 0 && item.c < n)) return item;
+      if (n === 2 && a[0] === 'صح' && a[1] === 'خطأ') return item;
+      const key = Games.seed(seed + '|' + String(item.q || ''));
+      const at = want == null ? (key % n) : ((((want | 0) % n) + n) % n);
+      const wrongs = Games.shuffle(a.map((_, i) => i).filter(i => i !== item.c), key);
+      const out = []; let w = 0;
+      for (let i = 0; i < n; i++) out.push(i === at ? item.c : wrongs[w++]);
+      return Object.assign({}, item, { a: out.map(i => a[i]), c: at });
     },
 
     seed(str) {
@@ -848,8 +870,13 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
     { id: 't3', name: 'النخلة', color: 'var(--sea-t3)' },
     { id: 't4', name: 'الشراع', color: 'var(--sea-t4)' },
   ];
-  Games.teamSet = n => Games.TEAMS.slice(0, Math.max(2, Math.min(4, n | 0 || 3)))
-    .map(t => Object.assign({ score: 0 }, t));
+   
+  Games.teamSet = n => {
+    const k = Math.max(1, Math.min(4, n | 0 || 3));
+    const set = Games.TEAMS.slice(0, k).map(t => Object.assign({ score: 0 }, t));
+    if (k === 1) set[0].name = 'أنت';
+    return set;
+  };
 
   S.games = Games;
   if (typeof module !== 'undefined' && module.exports) module.exports = Games;
@@ -950,8 +977,17 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
 
   const score = t => ((t.score || 0) > 0 ? AR(t.score) : '—');
 
+  const pts = n => AR(n) + ' ' + (n === 1 ? 'نقطة' : n === 2 ? 'نقطتان' : n <= 10 ? 'نقاط' : 'نقطة');
+
   function verdict(teams) {
     const ts = teams || [];
+     
+    if (ts.length === 1) {
+      const s = ts[0].score || 0;
+      return s
+        ? { title: 'أحسنت', line: 'نتيجتك ' + pts(s), isTop: () => true }
+        : { title: 'انتهت الجولة', line: 'جرّب مرة أخرى', isTop: () => false };
+    }
     const top = Math.max.apply(null, ts.map(t => t.score || 0).concat([0]));
     if (!top) return { title: 'أحسنتم', line: 'انتهت الحصة', isTop: () => false };
     const win = ts.filter(t => (t.score || 0) === top);
@@ -998,7 +1034,8 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
       elStep.textContent = total ? ('سؤال ' + AR(Math.min(done + 1, total)) + ' من ' + AR(total)) : '';
       const t = teams[turn];
        
-      elTurn.innerHTML = t ? '<i style="background:' + t.color + '"></i>دور ' + esc(t.name) + (t.tag ? ' · ' + esc(t.tag) : '') : '';
+      elTurn.innerHTML = t ? '<i style="background:' + t.color + '"></i>' +
+        (teams.length === 1 ? 'دورك' : 'دور ' + esc(t.name)) + (t.tag ? ' · ' + esc(t.tag) : '') : '';
     }
     function drawTeams() {
       elTeams.innerHTML = '<div class="gp-tm">' + teams.map((t, i) =>
@@ -4880,7 +4917,7 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
     name: 'سباق المعرفة',
     line: 'سؤال على الشاشة، والفريق صاحب الدور يلمس إجابته.',
     mins: [8, 12],
-    teams: { min: 2, max: 4 },
+    teams: { min: 1, max: 4 },    
     need: { min: 2, max: 4 },
     minQ: 4,
     comeback: 'المتأخّر بثلاث نقاط يصير سؤاله بنقطتين',
@@ -4954,7 +4991,7 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
     name: 'ضربات الترجيح',
     line: 'زوايا المرمى تحمل الإجابات، والحارس يتحرّك — سدّد على الصحيحة.',
     mins: [8, 14],
-    teams: { min: 2, max: 4 },
+    teams: { min: 1, max: 4 },    
     need: { min: 2, max: 4 },
     minQ: 4,
     comeback: 'المتأخّر بثلاث نقاط يصير هدفه بثلاث نقاط، والسلسلة تُكافأ',
@@ -5028,7 +5065,7 @@ SHIFT.sfxBank = {"pop":"data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2Z
   const pick = SHIFT.Store.pickedBank();
   const bank = pick ? B.get(pick.id) : null;
   const game = pick ? GM.get(pick.engine) : null;
-  const teamsN = (() => { try { return Math.max(2, Math.min(4, +localStorage.getItem('shift.teams.v1') || 3)); }
+  const teamsN = (() => { try { return Math.max(1, Math.min(4, +localStorage.getItem('shift.teams.v1') || 3)); }
                           catch (e) { return 3; } })();
 
   function dead(why) {

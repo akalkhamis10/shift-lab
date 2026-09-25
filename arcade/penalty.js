@@ -13,8 +13,13 @@
       const F = A.frame(el);
       const season = A.seasonActive();
       const nT = api.teams.length;
-      let lg = A.league.read();
+       
+      const solo = nT < 2;
+      let lg = solo ? null : A.league.read();
       if (lg && (!season || lg.season !== season.id || Object.keys(lg.assign || {}).length !== nT)) lg = null;
+      const soloNat = (solo && season) ? A.league.draw(season, 1, api.rnd)[0] : null;
+       
+      const natOf = (i, free) => free ? null : (lg ? lg.assign[i] : soloNat);
       let live = null, sheetTimers = [];
       const later = (fn, ms) => { const t = setTimeout(fn, ms); sheetTimers.push(t); return t; };
 
@@ -27,6 +32,7 @@
             '<h1>ضربات الترجيح</h1>' +
             (season ? '<p class="gp-sub">' + esc(season.name) + (lg
               ? ' — أكمل الدوري: الجولة ' + AR(lg.rounds + 1) + (std[0] && std[0].pts ? ' · المتصدّر ' + esc(std[0].name) : '')
+              : solo ? ' — منتخبك: ' + esc(soloNat)
               : ' — القرعة تسحب منتخباً لكل فريق') + '</p>' : '') +
             '<p class="gp-sub">اختر الصعوبة — الحارس أسرع كلما صعدت</p>' +
             '<div class="gp-acts ar-levels">' +
@@ -49,7 +55,7 @@
       }
 
       function begin(level, free) {
-        if (season && !free && !lg) return draw(level);
+        if (season && !free && !lg && !solo) return draw(level);
         start(level, free);
       }
 
@@ -79,12 +85,13 @@
         A.onProgress = (f, label) => { const b = F.sheet.querySelector('#arLoadBar'), t = F.sheet.querySelector('#arLoadTxt');
           if (b) b.style.transform = 'scaleX(' + Math.max(0.03, Math.min(1, f)).toFixed(3) + ')'; if (t && label) t.textContent = label; };
         const kits = api.teams.map((t, i) => {
-          const k = (season && lg && !free) ? A.league.kitOf(season, lg.assign[i]) : null;
+          const nat = season ? natOf(i, free) : null;
+          const k = nat ? A.league.kitOf(season, nat) : null;
           return k || [teamHex(t.color), '#ffffff'];
         });
-        const labels = api.teams.map((t, i) => (season && lg && !free) ? lg.assign[i] : t.name);
+        const labels = api.teams.map((t, i) => (season ? natOf(i, free) : null) || t.name);
          
-        if (api.setTag) api.teams.forEach((t, i) => api.setTag(i, (season && lg && !free) ? lg.assign[i] : ''));
+        if (api.setTag) api.teams.forEach((t, i) => api.setTag(i, (season ? natOf(i, free) : null) || ''));
         A.load().then(() => {
           if (!live) return;                         
           live.game = A.boot(F.mount, { scenes: [makeScene({ api, F, level, free, kits, labels, season, lg, done, ready() { F.sheet.hidden = true; F.sheet.innerHTML = ''; } })] });

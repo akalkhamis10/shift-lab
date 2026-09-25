@@ -589,7 +589,29 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
     prep(items, id, seed) {
       const g = BY[id]; if (!g) return [];
       const ok = (items || []).filter(it => Games.fits(it, id));
-      return Games.shuffle(ok, seed);
+       
+      const cyc = {};
+      return Games.shuffle(ok, seed).map(it => {
+        const n = ((it && it.a) || []).length;
+        if (n < 2) return it;
+        const c = cyc[n] || (cyc[n] = { k: 0, order: Games.shuffle(Array.from({ length: n }, (_, i) => i), Games.seed(seed + '|ن' + n)) });
+        const want = c.order[c.k % n];
+        c.k++;
+        if (c.k % n === 0) c.order = Games.shuffle(c.order, Games.seed(seed + '|ن' + n + '|' + c.k));
+        return Games.spin(it, seed, want);
+      });
+    },
+
+    spin(item, seed, want) {
+      const a = (item && item.a) || [], n = a.length;
+      if (n < 2 || !(item.c >= 0 && item.c < n)) return item;
+      if (n === 2 && a[0] === 'صح' && a[1] === 'خطأ') return item;
+      const key = Games.seed(seed + '|' + String(item.q || ''));
+      const at = want == null ? (key % n) : ((((want | 0) % n) + n) % n);
+      const wrongs = Games.shuffle(a.map((_, i) => i).filter(i => i !== item.c), key);
+      const out = []; let w = 0;
+      for (let i = 0; i < n; i++) out.push(i === at ? item.c : wrongs[w++]);
+      return Object.assign({}, item, { a: out.map(i => a[i]), c: at });
     },
 
     seed(str) {
@@ -638,8 +660,13 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
     { id: 't3', name: 'النخلة', color: 'var(--sea-t3)' },
     { id: 't4', name: 'الشراع', color: 'var(--sea-t4)' },
   ];
-  Games.teamSet = n => Games.TEAMS.slice(0, Math.max(2, Math.min(4, n | 0 || 3)))
-    .map(t => Object.assign({ score: 0 }, t));
+   
+  Games.teamSet = n => {
+    const k = Math.max(1, Math.min(4, n | 0 || 3));
+    const set = Games.TEAMS.slice(0, k).map(t => Object.assign({ score: 0 }, t));
+    if (k === 1) set[0].name = 'أنت';
+    return set;
+  };
 
   S.games = Games;
   if (typeof module !== 'undefined' && module.exports) module.exports = Games;
@@ -712,7 +739,7 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
     name: 'سباق المعرفة',
     line: 'سؤال على الشاشة، والفريق صاحب الدور يلمس إجابته.',
     mins: [8, 12],
-    teams: { min: 2, max: 4 },
+    teams: { min: 1, max: 4 },    
     need: { min: 2, max: 4 },
     minQ: 4,
     comeback: 'المتأخّر بثلاث نقاط يصير سؤاله بنقطتين',
@@ -4545,7 +4572,7 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
     name: 'ضربات الترجيح',
     line: 'زوايا المرمى تحمل الإجابات، والحارس يتحرّك — سدّد على الصحيحة.',
     mins: [8, 14],
-    teams: { min: 2, max: 4 },
+    teams: { min: 1, max: 4 },    
     need: { min: 2, max: 4 },
     minQ: 4,
     comeback: 'المتأخّر بثلاث نقاط يصير هدفه بثلاث نقاط، والسلسلة تُكافأ',
@@ -4641,7 +4668,8 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
   ].join('\n\n');
 
   const TEAMS_KEY = 'shift.teams.v1';
-  const teamsN = () => { try { return Math.max(2, Math.min(4, +localStorage.getItem(TEAMS_KEY) || 3)); } catch (e) { return 3; } };
+   
+  const teamsN = () => { try { return Math.max(1, Math.min(4, +localStorage.getItem(TEAMS_KEY) || 3)); } catch (e) { return 3; } };
   const setTeams = n => { try { localStorage.setItem(TEAMS_KEY, String(n)); }
     catch (e) { console.warn('SHIFT: تعذّر حفظ عدد الفِرَق —', e && e.message); } };
 
@@ -4762,6 +4790,10 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
       const mins = g.mins[0] === g.mins[1] ? AR(g.mins[0]) : 'من ' + AR(g.mins[0]) + ' إلى ' + AR(g.mins[1]);
       const tm = g.teams.min === g.teams.max ? AR(g.teams.min) : 'من ' + AR(g.teams.min) + ' إلى ' + AR(g.teams.max);
        
+      const teamTxt = n === 1
+        ? (g.teams.min > 1 ? 'فريقان فأكثر' : 'تُلعب وحدك')
+        : tm + ' ' + word(g.teams.max, 'فريق', 'فريقان', 'فِرَق');
+       
       const warm = g.warm ? `<button class="sea-warm${warmed(g.id) ? ' is-ready' : ''}" type="button" data-warm="${esc(g.id)}">${warmed(g.id) ? 'جاهزة للفصل بلا شبكة — نزّلها من جديد' : 'نزّل اللعبة الآن لتفتح في الفصل بلا شبكة'}</button>` : '';
       const open_ = g.warm ? '<div class="sea-game-wrap">' : '', close_ = g.warm ? warm + '</div>' : '';
       return open_ + `<button class="sea-game" data-game="${esc(g.id)}"${r.ok ? '' : ' disabled'}>
@@ -4770,7 +4802,7 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
           <b>${esc(g.name)}</b>
           <span class="sea-game-line">${esc(g.line)}</span>
           
-          <span class="sea-game-meta"><b class="sea-kind">${esc(g.kind)}</b>${mins} دقيقة<i class="sea-dot"></i>${tm} ${word(g.teams.max, 'فريق', 'فريقان', 'فِرَق')}</span>
+          <span class="sea-game-meta"><b class="sea-kind">${esc(g.kind)}</b>${mins} دقيقة<i class="sea-dot"></i>${teamTxt}</span>
           <span class="sea-fit">${esc(r.ok ? GM.fitLine(items, g.id) : r.why)}</span>
         </span>
       </button>` + close_;
@@ -4782,9 +4814,9 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
       ' — والأسئلة نفسها تعمل في كل لعبة.') + `
       <div class="sea-body" data-v="pick">
         <section class="sea-sec">
-          <p class="sea-label">كم فريقاً في الصفّ؟</p>
-          <div class="sea-chips">${[2, 3, 4].map(k =>
-            `<button class="sea-chip" data-teams="${k}"${k === n ? ' data-on="1"' : ''}>${AR(k)}</button>`).join('')}</div>
+          <p class="sea-label">كم فريقاً في الصفّ؟ أو العب وحدك</p>
+          <div class="sea-chips">${[1, 2, 3, 4].map(k =>
+            `<button class="sea-chip" data-teams="${k}"${k === n ? ' data-on="1"' : ''}>${k === 1 ? 'فردي' : AR(k)}</button>`).join('')}</div>
         </section>
         <section class="sea-sec">
           <div class="sea-games">${GM.all().map(card).join('')}</div>
