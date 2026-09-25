@@ -1,5 +1,5 @@
-/* SHIFT — حصة صفّية · نسخة 73f36675 */
-const CACHE = 'shift-class-73f36675';
+/* SHIFT — حصة صفّية · نسخة abff5c17 */
+const CACHE = 'shift-class-abff5c17';
 const FILES = ['./', './index.html', './play.html', './report.html', './lessons.html', './game.html',
   './fonts-sea.css', './figures.js', './lessons-figures.js', './manifest.webmanifest',
   "./kw/bg-classroom.webp","./kw/boy-happy-lg.webp","./kw/boy-happy-sm.webp","./kw/girl-happy-lg.webp","./kw/girl-happy-sm.webp","./kw/girl-thinking-lg.webp","./kw/girl-thinking-sm.webp","./kw/og-card.jpg","./kw/pack.js","./kw/teacher-main-lg.webp","./kw/teacher-main-sm.webp",

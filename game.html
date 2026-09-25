@@ -390,12 +390,16 @@
   border: var(--sea-bd) solid var(--sea-ink); border-radius: var(--sea-r); box-shadow: var(--sea-shadow-board); background: var(--sea-ink); }
 .ar-mount{ position: absolute; inset: 0; }
 .ar-mount canvas{ display: block; }
-.ar-sheet{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1em;
-  background: rgba(11, 60, 73, .58); z-index: 5; overflow: auto; }
+
+.ar-sheet{ position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: flex-start; padding: 1em;
+  background: rgba(11, 60, 73, .58); z-index: 5; overflow: auto; -webkit-overflow-scrolling: touch; }
+.ar-sheet > *{ margin: auto; }
 .ar-sheet[hidden]{ display: none; }
 .ar-card{ width: min(34em, 100%); }
 .ar-levels{ display: flex; flex-direction: row; flex-wrap: wrap; gap: .5em; justify-content: center; }
 .ar-levels .gp-b{ flex: 1 1 28%; }
+
+.ar-heroes .gp-b[aria-pressed="true"]{ background: var(--sea-teal); border-color: var(--sea-ink); color: var(--sea-white); font-weight: 800; }
 .ar-wait{ font-size: 1em; }
 
 .ar-draw{ display: grid; grid-template-columns: repeat(auto-fit, minmax(9em, 1fr)); gap: .7em; margin: .4em 0; }
