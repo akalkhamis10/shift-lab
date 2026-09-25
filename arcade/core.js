@@ -151,15 +151,6 @@
       g.fillStyle(0xffffff, 1); g.fillCircle(8, 8, 8); g.generateTexture('ar-dot', 16, 16);
       g.clear(); g.fillStyle(0xffffff, 1); g.fillRect(0, 0, 12, 18); g.generateTexture('ar-bit', 12, 18);
       g.destroy();
-       
-      if (!scene.textures.exists('ar-shadow')) {
-        const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
-        const ctx = cv.getContext('2d');
-        const gr = ctx.createRadialGradient(64, 32, 4, 64, 32, 32);
-        gr.addColorStop(0, 'rgba(0,0,0,0.55)'); gr.addColorStop(0.6, 'rgba(0,0,0,0.28)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.save(); ctx.scale(1, 1); ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(64, 32, 62, 30, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-        scene.textures.addCanvas('ar-shadow', cv);
-      }
     },
     burst(scene, x, y, colors, n, opt) {
       A.feel.ensureTex(scene);
@@ -404,22 +395,8 @@
       Object.keys(M.chars[c].poses).forEach(p => scene.load.image(A.artKey(c, p), 'arcade/art/' + c + '-' + p + '-' + set + '.webp'));
     });
     if (M.bg) scene.load.image('art-bg', 'arcade/art/stadium-bg-' + set + '.webp');
-    if (M.bgWide) scene.load.image('art-bg-wide', 'arcade/art/stadium-bg-wide-' + set + '.webp');
-    if (M.ball) scene.load.image('art-ball', 'arcade/art/ball-' + set + '.webp');
     scene.load.on('loaderror', f => { A.artMissing = true; console.warn('SHIFT: أصل فنّي لم يصل —', f && f.key); });
-     
-    scene.load.on('progress', v => { if (A.onProgress) A.onProgress(0.6 + 0.4 * v, 'تُحمَّل الرسوم'); });
     return true;
-  };
-   
-  A.artFiles = function (set) {
-    const M = A.art; if (!M) return [];
-    const out = [];
-    Object.keys(M.chars).forEach(c => Object.keys(M.chars[c].poses).forEach(p => out.push('arcade/art/' + c + '-' + p + '-' + set + '.webp')));
-    if (M.bg) out.push('arcade/art/stadium-bg-' + set + '.webp');
-    if (M.bgWide) out.push('arcade/art/stadium-bg-wide-' + set + '.webp');
-    if (M.ball) out.push('arcade/art/ball-' + set + '.webp');
-    return out;
   };
   A.artReady = function (scene, chars) {
     const M = A.art; if (!M || A.artMissing) return false;
@@ -478,98 +455,6 @@
     set(v) { try { localStorage.setItem(HERO_KEY, v); } catch (e) { console.warn('SHIFT: تعذّر حفظ اختيار الهدّاف —', e && e.message); } },
     pick(i) { const v = A.hero.get(); return v === 'auto' ? (i % 2 ? 'girl' : 'boy') : v; },
   };
-
-  const Snd = {
-    ctx: null, master: null, crowd: null, crowdGain: null,
-    on: () => true,
-    boot() {
-      if (Snd.ctx) { if (Snd.ctx.state === 'suspended') Snd.ctx.resume().catch(() => {}); return Snd.ctx; }
-      try {
-        const C = G.AudioContext || G.webkitAudioContext; if (!C) return null;
-        Snd.ctx = new C();
-        Snd.master = Snd.ctx.createGain(); Snd.master.gain.value = 0.9; Snd.master.connect(Snd.ctx.destination);
-         
-        const n = Snd.ctx.sampleRate * 2, buf = Snd.ctx.createBuffer(1, n, Snd.ctx.sampleRate), d = buf.getChannelData(0);
-        let b0 = 0, b1 = 0, b2 = 0;
-        for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; b0 = 0.99765 * b0 + w * 0.099; b1 = 0.963 * b1 + w * 0.2965; b2 = 0.57 * b2 + w * 1.0526; d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.11; }
-        const src = Snd.ctx.createBufferSource(); src.buffer = buf; src.loop = true;
-        const lp = Snd.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
-        Snd.crowdGain = Snd.ctx.createGain(); Snd.crowdGain.gain.value = 0.0;
-        src.connect(lp); lp.connect(Snd.crowdGain); Snd.crowdGain.connect(Snd.master); src.start();
-        Snd.crowd = { src, lp };
-      } catch (e) { Snd.ctx = null; }
-      return Snd.ctx;
-    },
-    ok() { return Snd.on() && Snd.boot(); },
-     
-    whistle(ms) {
-      const c = Snd.ok(); if (!c) return;
-      const t = c.currentTime, g = c.createGain(); g.connect(Snd.master);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.02); g.gain.setValueAtTime(0.5, t + (ms || 380) / 1000 - 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + (ms || 380) / 1000);
-      [2650, 2760].forEach(f => { const o = c.createOscillator(); o.type = 'square'; o.frequency.value = f;
-        const v = c.createOscillator(); v.frequency.value = 38; const vg = c.createGain(); vg.gain.value = 90; v.connect(vg); vg.connect(o.frequency);
-        o.connect(g); o.start(t); o.stop(t + (ms || 380) / 1000 + 0.02); v.start(t); v.stop(t + (ms || 380) / 1000 + 0.02); });
-    },
-     
-    kick() {
-      const c = Snd.ok(); if (!c) return;
-      const t = c.currentTime;
-      const o = c.createOscillator(), g = c.createGain(); o.type = 'sine';
-      o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
-      g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-      o.connect(g); g.connect(Snd.master); o.start(t); o.stop(t + 0.18);
-      Snd.puff(0.08, 0.35, 1800);
-    },
-     
-    thud() {
-      const c = Snd.ok(); if (!c) return;
-      const t = c.currentTime, o = c.createOscillator(), g = c.createGain(); o.type = 'triangle';
-      o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.1);
-      g.gain.setValueAtTime(0.6, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-      o.connect(g); g.connect(Snd.master); o.start(t); o.stop(t + 0.24);
-    },
-    puff(sec, vol, cutoff) {
-      const c = Snd.ok(); if (!c) return;
-      const n = Math.floor(c.sampleRate * sec), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
-      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
-      const s = c.createBufferSource(); s.buffer = buf; const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cutoff || 2000;
-      const g = c.createGain(); g.gain.value = vol || 0.3; s.connect(f); f.connect(g); g.connect(Snd.master); s.start();
-    },
-     
-    crowd(level, sec) {
-      const c = Snd.ok(); if (!c || !Snd.crowdGain) return;
-      const t = c.currentTime, g = Snd.crowdGain.gain;
-      g.cancelScheduledValues(t); g.setValueAtTime(Math.max(0.0001, g.value), t);
-      g.exponentialRampToValueAtTime(Math.max(0.0001, level), t + (sec || 0.3));
-    },
-     
-    roar(peak, hold) {
-      const c = Snd.ok(); if (!c) return;
-      Snd.crowd(peak == null ? 0.9 : peak, 0.25);
-      const t = c.currentTime;
-      if (Snd.crowd && Snd.crowd.lp) { Snd.crowd.lp.frequency.cancelScheduledValues(t); Snd.crowd.lp.frequency.setValueAtTime(900, t); Snd.crowd.lp.frequency.linearRampToValueAtTime(2600, t + 0.3); Snd.crowd.lp.frequency.linearRampToValueAtTime(900, t + (hold || 2.2)); }
-      setTimeout(() => Snd.crowd(0.08, 1.6), (hold || 2.2) * 1000);
-       
-      [0, 0.12, 0.24].forEach((dt, i) => { const o = c.createOscillator(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.value = 330 + i * 60;
-        const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 0.8;
-        g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(0.18, t + dt + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.5);
-        o.connect(f); f.connect(g); g.connect(Snd.master); o.start(t + dt); o.stop(t + dt + 0.55); });
-    },
-     
-    groan() {
-      const c = Snd.ok(); if (!c) return;
-      const t = c.currentTime, o = c.createOscillator(), g = c.createGain(); o.type = 'sawtooth';
-      o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(150, t + 0.6);
-      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 600;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
-      o.connect(f); f.connect(g); g.connect(Snd.master); o.start(t); o.stop(t + 0.75);
-      Snd.crowd(0.25, 0.15); setTimeout(() => Snd.crowd(0.08, 1.2), 500);
-    },
-     
-    ambient() { Snd.crowd(0.08, 1.0); },
-    quiet() { if (Snd.crowdGain) Snd.crowd(0.0001, 0.4); },
-  };
-  A.sound = Snd;
 
   A.games = A.games || {};
 
