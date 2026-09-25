@@ -219,6 +219,12 @@
 .sea-dot{ display:inline-block; width:4px; height:4px; border-radius:50%;
   background:var(--sea-sub); margin-inline:8px; vertical-align:middle; }
 
+.sea-game-wrap{ display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sea-warm{ font: inherit; font-weight: 600; font-size: 15px; min-height: 44px; padding: 0 14px; cursor: pointer;
+  background: var(--sea-white); color: var(--sea-ink); border: 2px solid var(--sea-ink); border-radius: var(--sea-r-sm); }
+.sea-warm[disabled]{ cursor: default; opacity: .8; }
+.sea-warm.is-ready{ background: var(--sea-t3); color: var(--sea-white); border-color: var(--sea-ink); }
+
 </style>
 </head>
 <body>
@@ -4555,28 +4561,52 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
     },
 
     mount(el, api) {
-      const A = () => S.arcade;
       let inst = null, dead = false;
-      el.innerHTML = '<p class="gw-sub ar-wait">تُجهَّز اللعبة…</p>';
+      el.innerHTML = loader('تُجهَّز ضربات الترجيح');
+      const prog = (f, label) => { const b = el.querySelector('#arLoadBar'), t = el.querySelector('#arLoadTxt');
+        if (b) b.style.transform = 'scaleX(' + Math.max(0.03, Math.min(1, f)).toFixed(3) + ')'; if (t && label) t.textContent = label; };
        
       Promise.resolve()
         .then(() => (S.arcade && S.arcade.script) ? null : loadScript('arcade/core.js'))
-        .then(() => Promise.all([S.arcade.load(), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason(), S.arcade.loadArtMeta()]))
-        .then(() => { if (!dead) inst = S.arcade.games.penalty.mount(el, api); })
+        .then(() => { prog(0.1, 'يُحمَّل محرّك الحركة'); S.arcade.onProgress = prog;
+          return Promise.all([S.arcade.load().then(() => prog(0.5, 'تُحمَّل اللعبة')), S.arcade.script('arcade/penalty.js'), S.arcade.loadSeason(), S.arcade.loadArtMeta()]); })
+        .then(() => { prog(0.6, 'جاهزة'); if (!dead) inst = S.arcade.games.penalty.mount(el, api); })
         .catch(e => {
           console.warn('SHIFT: لم تُفتح ضربات الترجيح —', e && e.message);
           if (!dead) el.innerHTML = '<div class="gp-card"><h1>لم تُفتح اللعبة</h1><p class="gp-sub">تعذّر تحميل محرّك الحركة على هذا الجهاز. جرّب إعادة الفتح، أو بدّل اللعبة بالأسئلة نفسها.</p></div>';
         });
-      function loadScript(src) {
-        return new Promise((res, rej) => {
-          const s = document.createElement('script'); s.src = src; s.async = true;
-          s.onload = () => res(src); s.onerror = () => rej(new Error('تعذّر تحميل ' + src));
-          document.head.appendChild(s);
-        });
-      }
       return { destroy() { dead = true; if (inst) inst.destroy(); } };
     },
+
+    warm(onProgress) {
+      const p = f => { try { if (onProgress) onProgress(f); } catch (e) {} };    
+      return Promise.resolve()
+        .then(() => (S.arcade && S.arcade.script) ? null : loadScript('arcade/core.js'))
+        .then(() => S.arcade.loadArtMeta())
+        .then(() => {
+          const A = S.arcade;
+          const set = A.artSet(screen.width || 1280, screen.height || 720);
+          const files = ['vendor/phaser-4.2.1.iife.js', 'arcade/core.js', 'arcade/penalty.js'].concat(A.SEASON_FILES, [A.ART_META], A.artFiles(set));
+          let done = 0, bytes = 0;
+          return files.reduce((q, f) => q.then(() => fetch(f, { cache: 'no-cache' }).then(r => {
+            if (!r.ok) throw new Error(f + ' — ' + r.status);
+            return r.arrayBuffer().then(buf => { bytes += buf.byteLength; done++; p(done / files.length); });
+          })), Promise.resolve()).then(() => ({ n: done, bytes }));
+        });
+    },
   });
+   
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = src; s.async = true;
+      s.onload = () => res(src); s.onerror = () => rej(new Error('تعذّر تحميل ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  function loader(title) {
+    return '<div class="ar-load gw-mine"><b>' + title + '</b><div class="ar-bar"><i id="arLoadBar"></i></div><small id="arLoadTxt">لحظة</small></div>';
+  }
+  S.games.get('penalty').loaderHtml = loader;
 })();
 
 </script>
@@ -4731,7 +4761,10 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
        
       const mins = g.mins[0] === g.mins[1] ? AR(g.mins[0]) : 'من ' + AR(g.mins[0]) + ' إلى ' + AR(g.mins[1]);
       const tm = g.teams.min === g.teams.max ? AR(g.teams.min) : 'من ' + AR(g.teams.min) + ' إلى ' + AR(g.teams.max);
-      return `<button class="sea-game" data-game="${esc(g.id)}"${r.ok ? '' : ' disabled'}>
+       
+      const warm = g.warm ? `<button class="sea-warm${warmed(g.id) ? ' is-ready' : ''}" type="button" data-warm="${esc(g.id)}">${warmed(g.id) ? 'جاهزة للفصل بلا شبكة — نزّلها من جديد' : 'نزّل اللعبة الآن لتفتح في الفصل بلا شبكة'}</button>` : '';
+      const open_ = g.warm ? '<div class="sea-game-wrap">' : '', close_ = g.warm ? warm + '</div>' : '';
+      return open_ + `<button class="sea-game" data-game="${esc(g.id)}"${r.ok ? '' : ' disabled'}>
         <span class="sea-game-art">${g.art()}</span>
         <span class="sea-game-txt">
           <b>${esc(g.name)}</b>
@@ -4740,8 +4773,10 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
           <span class="sea-game-meta"><b class="sea-kind">${esc(g.kind)}</b>${mins} دقيقة<i class="sea-dot"></i>${tm} ${word(g.teams.max, 'فريق', 'فريقان', 'فِرَق')}</span>
           <span class="sea-fit">${esc(r.ok ? GM.fitLine(items, g.id) : r.why)}</span>
         </span>
-      </button>`;
+      </button>` + close_;
     };
+     
+    function warmed(id) { try { return !!JSON.parse(localStorage.getItem('shift.arcade.warm.v1') || '{}')[id]; } catch (e) { return false; } }
     return top('اختر اللعبة',
       AR(items.length) + ' ' + word(items.length, 'سؤال جاهز', 'سؤالان جاهزان', 'أسئلة جاهزة') +
       ' — والأسئلة نفسها تعمل في كل لعبة.') + `
@@ -4810,6 +4845,19 @@ window.__LESSON = window.__LESSONS["KW-SOC-G5-LOC-01"];</script>
       render();
     };
     el.querySelectorAll('[data-game]').forEach(b => b.onclick = () => start(b.dataset.game));
+    el.querySelectorAll('[data-warm]').forEach(b => b.onclick = () => {
+      const g = GM.get(b.dataset.warm); if (!g || !g.warm) return;
+      b.disabled = true; b.classList.remove('is-ready'); b.textContent = 'تُنزَّل…';
+      g.warm(f => { b.textContent = 'تُنزَّل… ' + AR(Math.round(f * 100)) + '٪'; }).then(res => {
+        try { const v = JSON.parse(localStorage.getItem('shift.arcade.warm.v1') || '{}'); v[g.id] = Date.now(); localStorage.setItem('shift.arcade.warm.v1', JSON.stringify(v)); }
+        catch (e) { console.warn('SHIFT: تعذّر حفظ علامة التنزيل —', e && e.message); }
+        b.disabled = false; b.classList.add('is-ready');
+        b.textContent = 'جاهزة للفصل بلا شبكة — ' + AR(res.n) + ' ملفاً، ' + AR((res.bytes / 1048576).toFixed(1)) + ' م.ب';
+      }).catch(e => {
+        console.warn('SHIFT: لم يكتمل التنزيل —', e && e.message);
+        b.disabled = false; b.textContent = 'لم يكتمل التنزيل — حاول مرة أخرى';
+      });
+    });
   }
 
   function bindManage() {
